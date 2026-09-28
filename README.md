@@ -11,6 +11,7 @@ Ahora mismo estamos en el Hito 1 (Alpha), que se entrega el 28/10/2026.
 ```
 assets/            recursos gráficos y de sonido
 src/               código fuente: cabeceras (.hpp) y fuentes (.cpp) juntas
+tests/             pruebas automáticas (se compilan aparte del juego)
 vendor/include/    cabeceras de raylib (raylib.h, raymath.h, rlgl.h)
 vendor/lib/        libraylib.a (no se sube: cada uno la compila, ver abajo)
 bin/               ejecutable compilado (no se sube)
@@ -48,6 +49,17 @@ Windows:
 g++ -o bin/bomberman.exe src/*.cpp -I src/ -I vendor/include/ -L vendor/lib -lraylib -lopengl32 -lgdi32 -lwinmm
 bin/bomberman.exe
 ```
+
+## Pruebas
+
+Las pruebas automáticas están en `tests/` y se compilan aparte del juego (no abren ventana). Por ejemplo, las del escenario en Linux:
+
+```bash
+g++ -o bin/test_tablero tests/test_tablero.cpp src/Tablero.cpp -I src/ -I vendor/include/ -L vendor/lib -lraylib -lGL -lm -lpthread -lrt -lX11
+./bin/test_tablero
+```
+
+En Windows se cambian las librerías del final igual que al compilar el juego. El programa devuelve 0 si todo pasa.
 
 ## Cómo trabajamos
 
