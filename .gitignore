@@ -39,3 +39,18 @@
 
 # debug information files
 *.dwo
+
+# --- Añadido por el equipo -------------------------------------------------
+# libraylib.a ya queda fuera por la regla *.a de arriba: cada uno la compila
+# en su sistema (ver README) y la copia a vendor/lib/.
+
+# Ejecutables: se publican en las Releases de GitHub, no en el repo
+bin/
+game
+
+# Editores y sistema
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
