@@ -2,6 +2,7 @@
 #include <GameState.hpp>
 #include <Tablero.hpp>
 #include <ctime>
+#include <Jugador.hpp>
 
 // Pantalla principal de la partida.
 // De momento solo contiene el escenario (Paquete 1) y un banco de pruebas
@@ -27,6 +28,7 @@ class MainGameState : public GameState
     private:
         Tablero tablero;
         unsigned int semilla;
+        Jugador jugador;
 
         // --- Banco de pruebas del escenario (provisional) ---------------
         bool depuracion = false;      // F1: rejilla, coordenadas y semilla
