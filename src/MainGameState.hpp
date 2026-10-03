@@ -4,7 +4,7 @@
 #include <ctime>
 #include <Jugador.hpp>
 #include <Bomba.hpp>
-#include <memory>
+#include <vector>
 
 // Pantalla principal de la partida.
 // Contiene el escenario, el jugador y una bomba activa, además de un banco de
@@ -30,7 +30,7 @@ class MainGameState : public GameState
         Tablero tablero;
         unsigned int semilla;
         Jugador jugador;
-        std::unique_ptr<Bomba> bomba;
+        std::vector<Bomba> bombas;
 
         // --- Banco de pruebas del escenario (provisional) ---------------
         bool depuracion = false;      // F1: rejilla, coordenadas y semilla

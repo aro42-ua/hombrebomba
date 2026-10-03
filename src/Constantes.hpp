@@ -29,3 +29,14 @@ constexpr int PROB_BLOQUE = 60;   // % de probabilidad de bloque en una celda li
 // Tamaño de la caja de colisión del jugador. Lo decide el Paquete 2; aquí solo
 // se usa en el banco de pruebas de MainGameState. Debe ser MENOR que TAM_CELDA.
 constexpr int TAM_JUGADOR = 36;
+
+// --- Bomba -----------------------------------------------------------------
+static constexpr float DURACION_BOMBA = 3.0f;  // tiempo que tarda en explotar
+static constexpr float DURACION_EXPLOSION = 0.6f; // tiempo que dura la animación de la explosión
+static constexpr int ALCANCE_EXPLOSION = 1; // número de celdas que alcanza la explosión en cada dirección
+static const int DIRECCIONES[4][2] = { // direcciones de propagación de la explosión
+    { 0, -1 },
+    { 0, 1 },
+    { -1, 0 },
+    { 1, 0 },
+};

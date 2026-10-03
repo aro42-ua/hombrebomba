@@ -26,7 +26,7 @@ void MainGameState::init()
     // así que una partida nueva siempre empieza con un tablero limpio.
     tablero.generar(semilla);
     jugador.init(Tablero::centroDeCelda(1, 1));
-    bomba.reset();
+    bombas.clear();
 }
 
 void MainGameState::handleInput()
@@ -35,10 +35,17 @@ void MainGameState::handleInput()
     if (IsKeyPressed(KEY_R)) {
         tablero.generar(++semilla);
         jugador.init(Tablero::centroDeCelda(1, 1));
-        bomba.reset();
+        bombas.clear();
     }
-    if (IsKeyPressed(KEY_SPACE) && !bomba) {
-        bomba = std::make_unique<Bomba>(Tablero::pixelACelda(jugador.getPosicion()));
+    bool hayBombaEnCuentaAtras = false;
+    for (const Bomba& bomba : bombas) {
+        if (bomba.estaEnCuentaAtras()) {
+            hayBombaEnCuentaAtras = true;
+            break;
+        }
+    }
+    if (IsKeyPressed(KEY_SPACE) && !hayBombaEnCuentaAtras) {
+        bombas.emplace_back(Tablero::pixelACelda(jugador.getPosicion()));
     }
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         Celda c = Tablero::pixelACelda(GetMousePosition());
@@ -50,7 +57,13 @@ void MainGameState::handleInput()
 void MainGameState::update(float deltaTime)
 {
     jugador.update(deltaTime, tablero);
-    if (bomba && bomba->actualizar(deltaTime)) bomba.reset();
+    for (auto bomba = bombas.begin(); bomba != bombas.end();) {
+        if (bomba->actualizar(deltaTime, tablero)) {
+            bomba = bombas.erase(bomba);
+        } else {
+            ++bomba;
+        }
+    }
     Vector2 raton = GetMousePosition();
     cajaPrueba = { raton.x - TAM_JUGADOR / 2.0f,
                    raton.y - TAM_JUGADOR / 2.0f,
@@ -65,7 +78,7 @@ void MainGameState::render()
 
     tablero.dibujar();
     jugador.render(); // <-- Dibuja al jugador en pantalla
-    if (bomba) bomba->dibujar();
+    for (const Bomba& bomba : bombas) bomba.dibujar();
 
     if (depuracion) {
         tablero.dibujarDepuracion();
