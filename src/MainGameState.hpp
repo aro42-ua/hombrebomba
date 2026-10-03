@@ -3,11 +3,12 @@
 #include <Tablero.hpp>
 #include <ctime>
 #include <Jugador.hpp>
+#include <Bomba.hpp>
+#include <vector>
 
 // Pantalla principal de la partida.
-// De momento solo contiene el escenario (Paquete 1) y un banco de pruebas
-// para él. El jugador (P2), las bombas (P3) y los enemigos (P4) se irán
-// añadiendo aquí.
+// Contiene el escenario, el jugador y una bomba activa, además de un banco de
+// pruebas provisional para el escenario.
 class MainGameState : public GameState
 {
     public:
@@ -29,6 +30,7 @@ class MainGameState : public GameState
         Tablero tablero;
         unsigned int semilla;
         Jugador jugador;
+        std::vector<Bomba> bombas;
 
         // --- Banco de pruebas del escenario (provisional) ---------------
         bool depuracion = false;      // F1: rejilla, coordenadas y semilla

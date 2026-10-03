@@ -26,6 +26,7 @@ void MainGameState::init()
     // así que una partida nueva siempre empieza con un tablero limpio.
     tablero.generar(semilla);
     jugador.init(Tablero::centroDeCelda(1, 1));
+    bombas.clear();
 }
 
 void MainGameState::handleInput()
@@ -34,6 +35,17 @@ void MainGameState::handleInput()
     if (IsKeyPressed(KEY_R)) {
         tablero.generar(++semilla);
         jugador.init(Tablero::centroDeCelda(1, 1));
+        bombas.clear();
+    }
+    bool hayBombaEnCuentaAtras = false;
+    for (const Bomba& bomba : bombas) {
+        if (bomba.estaEnCuentaAtras()) {
+            hayBombaEnCuentaAtras = true;
+            break;
+        }
+    }
+    if (IsKeyPressed(KEY_SPACE) && !hayBombaEnCuentaAtras) {
+        bombas.emplace_back(Tablero::pixelACelda(jugador.getPosicion()));
     }
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         Celda c = Tablero::pixelACelda(GetMousePosition());
@@ -44,8 +56,14 @@ void MainGameState::handleInput()
 
 void MainGameState::update(float deltaTime)
 {
-    (void)deltaTime;   // todavía no hay nada que se mueva solo
     jugador.update(deltaTime, tablero);
+    for (auto bomba = bombas.begin(); bomba != bombas.end();) {
+        if (bomba->actualizar(deltaTime, tablero)) {
+            bomba = bombas.erase(bomba);
+        } else {
+            ++bomba;
+        }
+    }
     Vector2 raton = GetMousePosition();
     cajaPrueba = { raton.x - TAM_JUGADOR / 2.0f,
                    raton.y - TAM_JUGADOR / 2.0f,
@@ -60,6 +78,7 @@ void MainGameState::render()
 
     tablero.dibujar();
     jugador.render(); // <-- Dibuja al jugador en pantalla
+    for (const Bomba& bomba : bombas) bomba.dibujar();
 
     if (depuracion) {
         tablero.dibujarDepuracion();
