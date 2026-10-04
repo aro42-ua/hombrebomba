@@ -13,9 +13,27 @@ private:
     float velocidad;
     float tamano;
 
+
+    //Para que cada jugador guarde sus cuatro teclas
+    int teclaArriba;
+    int teclaAbajo;
+    int teclaIzquierda;
+    int teclaDerecha;
+
+    //Color del jugador
+    Color color;
+
 public:
-    // {72.0f, 120.0f} equivale al centro de la celda (1, 1) en píxeles
-    Jugador(Vector2 posInicial = { 72.0f, 120.0f }, float vel = 120.0f);
+    // {72.0f, 120.0f} equivale al centro de la celda (1, 1) en píxeles y 
+    Jugador(
+        Vector2 posInicial = { 72.0f, 120.0f },
+        float vel = 120.0f,
+        int arriba = KEY_W,
+        int abajo = KEY_S,
+        int izquierda = KEY_A,
+        int derecha = KEY_D,
+        Color colorJugador = BLUE
+    );
 
     void init(Vector2 posInicial);
     void handleInput();

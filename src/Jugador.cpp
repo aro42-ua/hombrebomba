@@ -1,8 +1,15 @@
 #include <Jugador.hpp>
 #include <Tablero.hpp>
 
-Jugador::Jugador(Vector2 posInicial, float vel) 
-    : posicion(posInicial), velocidad(vel), tamano(32.0f) {}
+Jugador::Jugador(Vector2 posInicial, float vel, int arriba, int abajo, int izquierda, int derecha, Color colorJugador)
+    : posicion(posInicial),
+      velocidad(vel),
+      tamano(32.0f),
+      teclaArriba(arriba),
+      teclaAbajo(abajo),
+      teclaIzquierda(izquierda),
+      teclaDerecha(derecha),
+      color(colorJugador){}
 
 void Jugador::init(Vector2 posInicial) {
     posicion = posInicial;
@@ -16,10 +23,10 @@ void Jugador::update(float deltaTime, const Tablero& tablero) {
     Vector2 direccion = { 0.0f, 0.0f };
 
     // Captura de entradas (WASD / Flechas)
-    if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) direccion.x += 1.0f;
-    if (IsKeyDown(KEY_LEFT)  || IsKeyDown(KEY_A)) direccion.x -= 1.0f;
-    if (IsKeyDown(KEY_DOWN)  || IsKeyDown(KEY_S)) direccion.y += 1.0f;
-    if (IsKeyDown(KEY_UP)    || IsKeyDown(KEY_W)) direccion.y -= 1.0f;
+    if (IsKeyDown(teclaDerecha))   direccion.x += 1.0f;
+    if (IsKeyDown(teclaIzquierda)) direccion.x -= 1.0f;
+    if (IsKeyDown(teclaAbajo))     direccion.y += 1.0f;
+    if (IsKeyDown(teclaArriba))    direccion.y -= 1.0f;
 
     // Normalización para mantener la misma velocidad en diagonal
     if (direccion.x != 0.0f && direccion.y != 0.0f) {
@@ -50,7 +57,7 @@ void Jugador::update(float deltaTime, const Tablero& tablero) {
 
 void Jugador::render() const {
     // Dibujado del personaje centrado en su posición actual
-    DrawRectangleV({ posicion.x - tamano / 2.0f, posicion.y - tamano / 2.0f }, { tamano, tamano }, BLUE);
+    DrawRectangleV({ posicion.x - tamano / 2.0f, posicion.y - tamano / 2.0f }, { tamano, tamano }, color);
 }
 
 Rectangle Jugador::getCajaColision() const {

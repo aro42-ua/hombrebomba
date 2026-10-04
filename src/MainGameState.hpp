@@ -29,7 +29,8 @@ class MainGameState : public GameState
     private:
         Tablero tablero;
         unsigned int semilla;
-        Jugador jugador;
+        Jugador jugador1;
+        Jugador jugador2;
         std::vector<Bomba> bombas;
 
         // --- Banco de pruebas del escenario (provisional) ---------------
