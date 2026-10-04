@@ -1,11 +1,11 @@
 #pragma once
 #include <Constantes.hpp>
+#include <vector>
+#include <Tablero.hpp>
 
 extern "C" {
     #include <raylib.h>
 }
-
-class Tablero; // Declaración adelantada para evitar inclusión circular
 
 class Jugador {
 private:
@@ -26,6 +26,14 @@ private:
     //Variable para saber si está vivo
     bool vivo = true;
 
+    bool puedeAtravesarBomba = false;
+    Celda bombaAtravesable = { -1, -1 };
+
+    bool colisionaConBombas(
+        Rectangle caja,
+        const std::vector<Celda>& bombas
+    ) const;
+
 public:
     // {72.0f, 120.0f} equivale al centro de la celda (1, 1) en píxeles y 
     Jugador(
@@ -40,7 +48,7 @@ public:
 
     void init(Vector2 posInicial);
     void handleInput();
-    void update(float deltaTime, const Tablero& tablero);
+    void update(float deltaTime, const Tablero& tablero, const std::vector<Celda>& bombas);
     void render() const;
 
     Rectangle getCajaColision() const;
@@ -49,4 +57,6 @@ public:
     //Control de vida
     bool estaVivo() const { return vivo; }
     void eliminar() { vivo = false; }
+
+    void permitirAtravesarBomba(Celda celda);
 };

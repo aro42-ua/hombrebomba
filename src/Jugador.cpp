@@ -14,13 +14,16 @@ Jugador::Jugador(Vector2 posInicial, float vel, int arriba, int abajo, int izqui
 void Jugador::init(Vector2 posInicial) {
     posicion = posInicial;
     vivo = true;
+
+    puedeAtravesarBomba = false;
+    bombaAtravesable = { -1, -1 };
 }
 
 void Jugador::handleInput() {
     // Reservado para acciones como soltar bombas en el Paquete 3
 }
 
-void Jugador::update(float deltaTime, const Tablero& tablero) {
+void Jugador::update(float deltaTime, const Tablero& tablero, const std::vector<Celda>& bombas) {
     //Si no existes no te mueves
     if (!vivo) {
         return;
@@ -45,7 +48,9 @@ void Jugador::update(float deltaTime, const Tablero& tablero) {
         float nuevaX = posicion.x + direccion.x * velocidad * deltaTime;
         Rectangle cajaX = { nuevaX - tamano / 2.0f, posicion.y - tamano / 2.0f, tamano, tamano };
         
-        if (!tablero.colisiona(cajaX)) {
+        if (!tablero.colisiona(cajaX) &&
+            !colisionaConBombas(cajaX, bombas)) {
+
             posicion.x = nuevaX;
         }
     }
@@ -55,8 +60,31 @@ void Jugador::update(float deltaTime, const Tablero& tablero) {
         float nuevaY = posicion.y + direccion.y * velocidad * deltaTime;
         Rectangle cajaY = { posicion.x - tamano / 2.0f, nuevaY - tamano / 2.0f, tamano, tamano };
 
-        if (!tablero.colisiona(cajaY)) {
+        if (!tablero.colisiona(cajaY) &&
+            !colisionaConBombas(cajaY, bombas)) {
+
             posicion.y = nuevaY;
+        }
+    }
+
+    if (puedeAtravesarBomba) {
+
+        Vector2 esquina = Tablero::celdaAPixel(
+            bombaAtravesable.col,
+            bombaAtravesable.fila
+        );
+
+        Rectangle cajaBomba = {
+            esquina.x,
+            esquina.y,
+            static_cast<float>(TAM_CELDA),
+            static_cast<float>(TAM_CELDA)
+        };
+
+        // Cuando el jugador ha salido completamente de su bomba,
+        // esta pasa a comportarse como un obstáculo normal.
+        if (!CheckCollisionRecs(getCajaColision(), cajaBomba)) {
+            puedeAtravesarBomba = false;
         }
     }
 }
@@ -73,4 +101,41 @@ void Jugador::render() const {
 
 Rectangle Jugador::getCajaColision() const {
     return { posicion.x - tamano / 2.0f, posicion.y - tamano / 2.0f, tamano, tamano };
+}
+
+void Jugador::permitirAtravesarBomba(Celda celda) {
+    puedeAtravesarBomba = true;
+    bombaAtravesable = celda;
+}
+
+bool Jugador::colisionaConBombas(
+    Rectangle caja,
+    const std::vector<Celda>& bombas
+) const {
+    for (const Celda& celda : bombas) {
+
+        // El jugador puede atravesar temporalmente
+        // la bomba que acaba de colocar.
+        if (puedeAtravesarBomba &&
+            celda.col == bombaAtravesable.col &&
+            celda.fila == bombaAtravesable.fila) {
+            continue;
+        }
+
+        Vector2 esquina =
+            Tablero::celdaAPixel(celda.col, celda.fila);
+
+        Rectangle cajaBomba = {
+            esquina.x,
+            esquina.y,
+            static_cast<float>(TAM_CELDA),
+            static_cast<float>(TAM_CELDA)
+        };
+
+        if (CheckCollisionRecs(caja, cajaBomba)) {
+            return true;
+        }
+    }
+
+    return false;
 }

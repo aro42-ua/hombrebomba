@@ -38,12 +38,21 @@ void GameOverState::render()
     ClearBackground({ 24, 33, 27, 255 });
 
     const char* textoGameOver = "GAME OVER";
-    const char* textoGanador =
-        ganador == 1 ? "JUGADOR 1 GANA!" : "JUGADOR 2 GANA!";
+    const char* textoResultado;
+
+    if (ganador == 1) {
+        textoResultado = "JUGADOR 1 GANA!";
+    }
+    else if (ganador == 2) {
+        textoResultado = "JUGADOR 2 GANA!";
+    }
+    else {
+        textoResultado = "EMPATE!";
+    }
     const char* textoReinicio = "Pulsa ENTER para jugar de nuevo";
 
     int anchoGameOver = MeasureText(textoGameOver, 50);
-    int anchoGanador = MeasureText(textoGanador, 30);
+    int anchoGanador = MeasureText(textoResultado, 30);
     int anchoReinicio = MeasureText(textoReinicio, 20);
 
     DrawText(
@@ -55,7 +64,7 @@ void GameOverState::render()
     );
 
     DrawText(
-        textoGanador,
+        textoResultado,
         ANCHO_VENTANA / 2 - anchoGanador / 2,
         270,
         30,

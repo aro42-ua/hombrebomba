@@ -83,10 +83,16 @@ void MainGameState::handleInput()
         }
     }
 
-    if (jugador1.estaVivo() && IsKeyPressed(KEY_SPACE) && !bombaJugador1Activa) {
-        bombasJugador1.emplace_back(
-            Tablero::pixelACelda(jugador1.getPosicion())
-        );
+    if (jugador1.estaVivo() &&
+        IsKeyPressed(KEY_SPACE) &&
+        !bombaJugador1Activa) {
+
+            Celda celdaBomba =
+                Tablero::pixelACelda(jugador1.getPosicion());
+
+            bombasJugador1.emplace_back(celdaBomba);
+
+        jugador1.permitirAtravesarBomba(celdaBomba);
     }
 
 
@@ -100,10 +106,16 @@ void MainGameState::handleInput()
         }
     }
 
-    if (jugador2.estaVivo() && IsKeyPressed(KEY_ENTER) && !bombaJugador2Activa) {
-        bombasJugador2.emplace_back(
-            Tablero::pixelACelda(jugador2.getPosicion())
-        );
+    if (jugador2.estaVivo() &&
+        IsKeyPressed(KEY_ENTER) &&
+        !bombaJugador2Activa) {
+
+        Celda celdaBomba =
+            Tablero::pixelACelda(jugador2.getPosicion());
+
+        bombasJugador2.emplace_back(celdaBomba);
+
+        jugador2.permitirAtravesarBomba(celdaBomba);
     }
 
     // Herramienta provisional de depuración.
@@ -118,9 +130,23 @@ void MainGameState::handleInput()
 
 void MainGameState::update(float deltaTime)
 {
+    std::vector<Celda> celdasBombas;
+
+    for (const Bomba& bomba : bombasJugador1) {
+        if (bomba.estaEnCuentaAtras()) {
+            celdasBombas.push_back(bomba.getPosicion());
+        }
+    }
+
+    for (const Bomba& bomba : bombasJugador2) {
+        if (bomba.estaEnCuentaAtras()) {
+            celdasBombas.push_back(bomba.getPosicion());
+        }
+    }
+
     // Cada jugador procesa sus propios controles.
-    jugador1.update(deltaTime, tablero);
-    jugador2.update(deltaTime, tablero);
+    jugador1.update(deltaTime, tablero, celdasBombas);
+    jugador2.update(deltaTime, tablero, celdasBombas);
 
     // Actualización de las bombas.
     for (auto bomba = bombasJugador1.begin(); bomba != bombasJugador1.end();) {
@@ -178,7 +204,11 @@ void MainGameState::update(float deltaTime)
 
     if (!partidaTerminada) {
 
-        if (jugador1.estaVivo() && !jugador2.estaVivo()) {
+        if (!jugador1.estaVivo() && !jugador2.estaVivo()) {
+            ganador = 0;
+            partidaTerminada = true;
+        }
+        else if (jugador1.estaVivo() && !jugador2.estaVivo()) {
             ganador = 1;
             partidaTerminada = true;
         }
@@ -214,13 +244,55 @@ void MainGameState::render()
 
     ClearBackground({ 24, 33, 27, 255 });
 
+    // ---------------------------------------------------------------------
+    // HUD
+    // ---------------------------------------------------------------------
+
+    const char* estadoJugador1 =
+        jugador1.estaVivo() ? "VIVO" : "ELIMINADO";
+
+    const char* estadoJugador2 =
+        jugador2.estaVivo() ? "VIVO" : "ELIMINADO";
+
+    DrawText(
+        TextFormat("J1: %s", estadoJugador1),
+        20,
+        14,
+        20,
+        jugador1.estaVivo() ? BLUE : GRAY
+    );
+
+    const char* textoJugador2 =
+        TextFormat("J2: %s", estadoJugador2);
+
+    int anchoJugador2 = MeasureText(textoJugador2, 20);
+
+    DrawText(
+        textoJugador2,
+        ANCHO_VENTANA - anchoJugador2 - 20,
+        14,
+        20,
+        jugador2.estaVivo() ? RED : GRAY
+    );
+
+    // Línea que separa el HUD del tablero.
+    DrawLine(
+        0,
+        ALTO_HUD - 1,
+        ANCHO_VENTANA,
+        ALTO_HUD - 1,
+        DARKGRAY
+    );
+
+    // ---------------------------------------------------------------------
+    // Juego
+    // ---------------------------------------------------------------------
+
     tablero.dibujar();
 
-    // Dibujamos ambos jugadores.
     jugador1.render();
     jugador2.render();
 
-    // Dibujamos bombas y explosiones.
     for (const Bomba& bomba : bombasJugador1) {
         bomba.dibujar();
     }
@@ -228,6 +300,10 @@ void MainGameState::render()
     for (const Bomba& bomba : bombasJugador2) {
         bomba.dibujar();
     }
+
+    // ---------------------------------------------------------------------
+    // Depuración
+    // ---------------------------------------------------------------------
 
     if (depuracion) {
         tablero.dibujarDepuracion();
