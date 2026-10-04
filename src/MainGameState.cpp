@@ -47,6 +47,9 @@ void MainGameState::init()
 
     bombasJugador1.clear();
     bombasJugador2.clear();
+
+    partidaTerminada = false;
+    ganador = 0;
 }
 
 void MainGameState::handleInput()
@@ -170,6 +173,18 @@ void MainGameState::update(float deltaTime)
     comprobarExplosion(bombasJugador1);
     comprobarExplosion(bombasJugador2);
 
+    if (!partidaTerminada) {
+
+    if (jugador1.estaVivo() && !jugador2.estaVivo()) {
+        ganador = 1;
+        partidaTerminada = true;
+    }
+    else if (!jugador1.estaVivo() && jugador2.estaVivo()) {
+        ganador = 2;
+        partidaTerminada = true;
+    }
+}
+
     // Banco de pruebas del escenario.
     Vector2 raton = GetMousePosition();
 
@@ -223,6 +238,16 @@ void MainGameState::render()
             jugador2.getCajaColision(),
             2,
             RED
+        );
+    }
+
+    if (partidaTerminada) {
+        DrawText(
+            TextFormat("Jugador %d gana", ganador),
+            250,
+            12,
+            24,
+            WHITE
         );
     }
 
