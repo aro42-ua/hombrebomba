@@ -1,5 +1,8 @@
 #include <MainGameState.hpp>
 #include <iostream>
+#include <GameOverState.hpp>
+#include <StateMachine.hpp>
+#include <memory>
 
 extern "C" {
     #include <raylib.h>
@@ -175,15 +178,22 @@ void MainGameState::update(float deltaTime)
 
     if (!partidaTerminada) {
 
-    if (jugador1.estaVivo() && !jugador2.estaVivo()) {
-        ganador = 1;
-        partidaTerminada = true;
+        if (jugador1.estaVivo() && !jugador2.estaVivo()) {
+            ganador = 1;
+            partidaTerminada = true;
+        }
+        else if (!jugador1.estaVivo() && jugador2.estaVivo()) {
+            ganador = 2;
+            partidaTerminada = true;
+        }
+
+        if (partidaTerminada) {
+            state_machine->add_state(
+                std::make_unique<GameOverState>(ganador, semilla),
+                true
+            );
+        }
     }
-    else if (!jugador1.estaVivo() && jugador2.estaVivo()) {
-        ganador = 2;
-        partidaTerminada = true;
-    }
-}
 
     // Banco de pruebas del escenario.
     Vector2 raton = GetMousePosition();
@@ -238,16 +248,6 @@ void MainGameState::render()
             jugador2.getCajaColision(),
             2,
             RED
-        );
-    }
-
-    if (partidaTerminada) {
-        DrawText(
-            TextFormat("Jugador %d gana", ganador),
-            250,
-            12,
-            24,
-            WHITE
         );
     }
 
