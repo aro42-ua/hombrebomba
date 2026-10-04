@@ -3,6 +3,7 @@
 #include <GameOverState.hpp>
 #include <StateMachine.hpp>
 #include <memory>
+#include <ResultadoPartida.hpp>
 
 extern "C" {
     #include <raylib.h>
@@ -204,20 +205,25 @@ void MainGameState::update(float deltaTime)
 
     if (!partidaTerminada) {
 
-        if (!jugador1.estaVivo() && !jugador2.estaVivo()) {
-            ganador = 0;
-            partidaTerminada = true;
-        }
-        else if (jugador1.estaVivo() && !jugador2.estaVivo()) {
-            ganador = 1;
-            partidaTerminada = true;
-        }
-        else if (!jugador1.estaVivo() && jugador2.estaVivo()) {
-            ganador = 2;
-            partidaTerminada = true;
-        }
+    ResultadoPartida resultado = calcularResultadoPartida(
+        jugador1.estaVivo(),
+        jugador2.estaVivo()
+    );
 
-        if (partidaTerminada) {
+    if (resultado != ResultadoPartida::EnCurso) {
+
+            if (resultado == ResultadoPartida::Jugador1) {
+                ganador = 1;
+            }
+            else if (resultado == ResultadoPartida::Jugador2) {
+                ganador = 2;
+            }
+            else {
+                ganador = 0;
+            }
+
+            partidaTerminada = true;
+
             state_machine->add_state(
                 std::make_unique<GameOverState>(ganador, semilla),
                 true
