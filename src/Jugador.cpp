@@ -13,6 +13,7 @@ Jugador::Jugador(Vector2 posInicial, float vel, int arriba, int abajo, int izqui
 
 void Jugador::init(Vector2 posInicial) {
     posicion = posInicial;
+    vivo = true;
 }
 
 void Jugador::handleInput() {
@@ -20,6 +21,11 @@ void Jugador::handleInput() {
 }
 
 void Jugador::update(float deltaTime, const Tablero& tablero) {
+    //Si no existes no te mueves
+    if (!vivo) {
+        return;
+    }
+
     Vector2 direccion = { 0.0f, 0.0f };
 
     // Captura de entradas (WASD / Flechas)
@@ -56,8 +62,13 @@ void Jugador::update(float deltaTime, const Tablero& tablero) {
 }
 
 void Jugador::render() const {
-    // Dibujado del personaje centrado en su posición actual
-    DrawRectangleV({ posicion.x - tamano / 2.0f, posicion.y - tamano / 2.0f }, { tamano, tamano }, color);
+    Color colorActual = vivo ? color : GRAY;
+
+    DrawRectangleV(
+        { posicion.x - tamano / 2.0f, posicion.y - tamano / 2.0f },
+        { tamano, tamano },
+        colorActual
+    );
 }
 
 Rectangle Jugador::getCajaColision() const {

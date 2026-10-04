@@ -23,6 +23,9 @@ private:
     //Color del jugador
     Color color;
 
+    //Variable para saber si está vivo
+    bool vivo = true;
+
 public:
     // {72.0f, 120.0f} equivale al centro de la celda (1, 1) en píxeles y 
     Jugador(
@@ -42,4 +45,8 @@ public:
 
     Rectangle getCajaColision() const;
     Vector2 getPosicion() const { return posicion; }
+
+    //Control de vida
+    bool estaVivo() const { return vivo; }
+    void eliminar() { vivo = false; }
 };

@@ -45,7 +45,8 @@ void MainGameState::init()
     jugador1.init(Tablero::centroDeCelda(1, 1));
     jugador2.init(Tablero::centroDeCelda(COLUMNAS - 2, 1));
 
-    bombas.clear();
+    bombasJugador1.clear();
+    bombasJugador2.clear();
 }
 
 void MainGameState::handleInput()
@@ -62,23 +63,40 @@ void MainGameState::handleInput()
         jugador1.init(Tablero::centroDeCelda(1, 1));
         jugador2.init(Tablero::centroDeCelda(COLUMNAS - 2, 1));
 
-        bombas.clear();
+        bombasJugador1.clear();
+        bombasJugador2.clear();
     }
 
-    // De momento se mantiene el sistema de bombas existente.
-    // La bomba sigue perteneciendo provisionalmente al jugador 1.
-    bool hayBombaEnCuentaAtras = false;
+    // --- Bomba del jugador 1 -------------------------------------------------
+    bool bombaJugador1Activa = false;
 
-    for (const Bomba& bomba : bombas) {
+    for (const Bomba& bomba : bombasJugador1) {
         if (bomba.estaEnCuentaAtras()) {
-            hayBombaEnCuentaAtras = true;
+            bombaJugador1Activa = true;
             break;
         }
     }
 
-    if (IsKeyPressed(KEY_SPACE) && !hayBombaEnCuentaAtras) {
-        bombas.emplace_back(
+    if (jugador1.estaVivo() && IsKeyPressed(KEY_SPACE) && !bombaJugador1Activa) {
+        bombasJugador1.emplace_back(
             Tablero::pixelACelda(jugador1.getPosicion())
+        );
+    }
+
+
+    // --- Bomba del jugador 2 -------------------------------------------------
+    bool bombaJugador2Activa = false;
+
+    for (const Bomba& bomba : bombasJugador2) {
+        if (bomba.estaEnCuentaAtras()) {
+            bombaJugador2Activa = true;
+            break;
+        }
+    }
+
+    if (jugador2.estaVivo() && IsKeyPressed(KEY_ENTER) && !bombaJugador2Activa) {
+        bombasJugador2.emplace_back(
+            Tablero::pixelACelda(jugador2.getPosicion())
         );
     }
 
@@ -99,13 +117,58 @@ void MainGameState::update(float deltaTime)
     jugador2.update(deltaTime, tablero);
 
     // Actualización de las bombas.
-    for (auto bomba = bombas.begin(); bomba != bombas.end();) {
+    for (auto bomba = bombasJugador1.begin(); bomba != bombasJugador1.end();) {
         if (bomba->actualizar(deltaTime, tablero)) {
-            bomba = bombas.erase(bomba);
+            bomba = bombasJugador1.erase(bomba);
         } else {
             ++bomba;
         }
     }
+
+    for (auto bomba = bombasJugador2.begin(); bomba != bombasJugador2.end();) {
+        if (bomba->actualizar(deltaTime, tablero)) {
+            bomba = bombasJugador2.erase(bomba);
+        } else {
+            ++bomba;
+        }
+    }
+
+    // Comprobar si una explosión alcanza a un jugador.
+    auto comprobarExplosion = [&](const std::vector<Bomba>& bombas) {
+        for (const Bomba& bomba : bombas) {
+
+            // Si sigue en cuenta atrás todavía no hace daño.
+            if (bomba.estaEnCuentaAtras()) {
+                continue;
+            }
+
+            Celda celdaJugador1 =
+                Tablero::pixelACelda(jugador1.getPosicion());
+
+            Celda celdaJugador2 =
+                Tablero::pixelACelda(jugador2.getPosicion());
+
+            for (const Celda& celdaExplosion : bomba.getCeldasExplosion()) {
+
+                if (jugador1.estaVivo() &&
+                    celdaJugador1.col == celdaExplosion.col &&
+                    celdaJugador1.fila == celdaExplosion.fila) {
+
+                    jugador1.eliminar();
+                }
+
+                if (jugador2.estaVivo() &&
+                    celdaJugador2.col == celdaExplosion.col &&
+                    celdaJugador2.fila == celdaExplosion.fila) {
+
+                    jugador2.eliminar();
+                }
+            }
+        }
+    };
+
+    comprobarExplosion(bombasJugador1);
+    comprobarExplosion(bombasJugador2);
 
     // Banco de pruebas del escenario.
     Vector2 raton = GetMousePosition();
@@ -133,7 +196,11 @@ void MainGameState::render()
     jugador2.render();
 
     // Dibujamos bombas y explosiones.
-    for (const Bomba& bomba : bombas) {
+    for (const Bomba& bomba : bombasJugador1) {
+        bomba.dibujar();
+    }
+
+    for (const Bomba& bomba : bombasJugador2) {
         bomba.dibujar();
     }
 

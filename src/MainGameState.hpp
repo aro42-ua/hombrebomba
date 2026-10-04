@@ -31,7 +31,11 @@ class MainGameState : public GameState
         unsigned int semilla;
         Jugador jugador1;
         Jugador jugador2;
-        std::vector<Bomba> bombas;
+        std::vector<Bomba> bombasJugador1;
+        std::vector<Bomba> bombasJugador2;
+
+        bool partidaTerminada = false;
+        int ganador = 0;
 
         // --- Banco de pruebas del escenario (provisional) ---------------
         bool depuracion = false;      // F1: rejilla, coordenadas y semilla
