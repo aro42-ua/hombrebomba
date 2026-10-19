@@ -1,7 +1,7 @@
 #include <Bomba.hpp>
 #include <Constantes.hpp>
 
-Bomba::Bomba(Celda posicion) : posicion(posicion) {}
+Bomba::Bomba(Celda posicion, int alcance) : posicion(posicion), alcance(alcance) {}
 
 bool Bomba::estaEnCuentaAtras() const {
     return fase == Fase::CuentaAtras;
@@ -11,7 +11,7 @@ void Bomba::iniciarExplosion(Tablero& tablero) {
     celdasExplosion.push_back(posicion);
 
     for (const auto& direccion : DIRECCIONES) {
-        for (int paso = 1; paso <= ALCANCE_EXPLOSION; paso++) {
+        for (int paso = 1; paso <= alcance; paso++) {
             Celda celda = {
                 posicion.col + direccion[0] * paso,
                 posicion.fila + direccion[1] * paso,
