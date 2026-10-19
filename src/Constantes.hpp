@@ -50,3 +50,13 @@ constexpr int   MAX_ALCANCE           = 5;       // tope de alcance de la llama
 constexpr float VELOCIDAD_JUGADOR     = 120.0f;  // velocidad inicial (px/s)
 constexpr float INCREMENTO_VELOCIDAD  = 20.0f;   // lo que suma cada patín
 constexpr float MAX_VELOCIDAD_JUGADOR = 200.0f;
+
+// --- Enemigos --------------------------------------------------------------
+constexpr int   TAM_ENEMIGO            = 34;     // lado de su caja (px)
+constexpr float MARGEN_CONTACTO        = 4.0f;   // cuánto se encoge la caja al tocar al jugador
+constexpr float VELOCIDAD_GLOBO        = 60.0f;  // px/s; el jugador va a 120
+constexpr float VELOCIDAD_PERSEGUIDOR  = 80.0f;
+constexpr int   RADIO_PERSECUCION      = 8;      // pasos de camino a los que "ve" a un jugador
+constexpr int   RADIO_HUIDA            = 10;     // pasos que busca como mucho para ponerse a salvo
+constexpr int   PROB_SEGUIR_RECTO      = 70;     // % de seguir en línea recta al deambular
+constexpr int   DISTANCIA_APARICION    = 8;      // distancia mínima (Manhattan) a los jugadores
