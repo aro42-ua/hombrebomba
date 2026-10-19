@@ -5,6 +5,8 @@
 #include <Jugador.hpp>
 #include <Bomba.hpp>
 #include <PowerUp.hpp>
+#include <Enemigo.hpp>
+#include <IAEnemigo.hpp>
 #include <vector>
 
 // Pantalla principal de la partida.
@@ -40,6 +42,14 @@ class MainGameState : public GameState
 
         void recogerPowerUps(Jugador& jugador);
 
+        // Un globo y un perseguidor en las esquinas de abajo y otro globo en
+        // una celda vacía lejos de los dos jugadores.
+        void crearEnemigos();
+
+        // Mueve a los enemigos con la IA, elimina a los que alcanza una
+        // llama y elimina a los jugadores que tocan a un enemigo.
+        void actualizarEnemigos(float deltaTime, const std::vector<Celda>& llamas);
+
         Tablero tablero;
         unsigned int semilla;
         Jugador jugador1;
@@ -47,6 +57,8 @@ class MainGameState : public GameState
         std::vector<Bomba> bombasJugador1;
         std::vector<Bomba> bombasJugador2;
         GestorPowerUps powerUps;
+        std::vector<Enemigo> enemigos;
+        MapaPeligro mapaPeligro;
 
         bool partidaTerminada = false;
         int ganador = 0;
