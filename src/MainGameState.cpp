@@ -21,7 +21,7 @@ MainGameState::MainGameState(unsigned int semilla)
     : semilla(semilla),
       jugador1(
           Tablero::centroDeCelda(1, 1),
-          120.0f,
+          VELOCIDAD_JUGADOR,
           KEY_W,
           KEY_S,
           KEY_A,
@@ -30,7 +30,7 @@ MainGameState::MainGameState(unsigned int semilla)
       ),
       jugador2(
           Tablero::centroDeCelda(COLUMNAS - 2, 1),
-          120.0f,
+          VELOCIDAD_JUGADOR,
           KEY_UP,
           KEY_DOWN,
           KEY_LEFT,
@@ -42,8 +42,14 @@ MainGameState::MainGameState(unsigned int semilla)
 
 void MainGameState::init()
 {
+    reiniciarPartida();
+}
+
+void MainGameState::reiniciarPartida()
+{
     // Se genera un tablero limpio al comenzar una partida.
     tablero.generar(semilla);
+    powerUps.repartir(tablero, semilla);
 
     // Posiciones iniciales de los dos jugadores.
     jugador1.init(Tablero::centroDeCelda(1, 1));
@@ -56,6 +62,73 @@ void MainGameState::init()
     ganador = 0;
 }
 
+void MainGameState::intentarPonerBomba(Jugador& jugador, std::vector<Bomba>& bombas)
+{
+    if (!jugador.estaVivo()) {
+        return;
+    }
+
+    int bombasActivas = 0;
+    for (const Bomba& bomba : bombas) {
+        if (bomba.estaEnCuentaAtras()) {
+            bombasActivas++;
+        }
+    }
+    if (bombasActivas >= jugador.getMaxBombas()) {
+        return;
+    }
+
+    // Con varias bombas, el jugador podría pulsar dos veces sin moverse.
+    Celda celdaBomba = Tablero::pixelACelda(jugador.getPosicion());
+    for (const Celda& ocupada : celdasConBomba()) {
+        if (ocupada.col == celdaBomba.col && ocupada.fila == celdaBomba.fila) {
+            return;
+        }
+    }
+
+    bombas.emplace_back(celdaBomba, jugador.getAlcance());
+    jugador.permitirAtravesarBomba(celdaBomba);
+}
+
+std::vector<Celda> MainGameState::celdasConBomba() const
+{
+    std::vector<Celda> celdas;
+    for (const std::vector<Bomba>* lista : { &bombasJugador1, &bombasJugador2 }) {
+        for (const Bomba& bomba : *lista) {
+            if (bomba.estaEnCuentaAtras()) {
+                celdas.push_back(bomba.getPosicion());
+            }
+        }
+    }
+    return celdas;
+}
+
+std::vector<Celda> MainGameState::celdasEnLlamas() const
+{
+    std::vector<Celda> celdas;
+    for (const std::vector<Bomba>* lista : { &bombasJugador1, &bombasJugador2 }) {
+        for (const Bomba& bomba : *lista) {
+            if (!bomba.estaEnCuentaAtras()) {
+                const std::vector<Celda>& llamas = bomba.getCeldasExplosion();
+                celdas.insert(celdas.end(), llamas.begin(), llamas.end());
+            }
+        }
+    }
+    return celdas;
+}
+
+void MainGameState::recogerPowerUps(Jugador& jugador)
+{
+    if (!jugador.estaVivo()) {
+        return;
+    }
+
+    TipoPowerUp tipo;
+    if (powerUps.recoger(Tablero::pixelACelda(jugador.getPosicion()), tipo)) {
+        jugador.aplicarPowerUp(tipo);
+    }
+}
+
 void MainGameState::handleInput()
 {
     // Activar/desactivar información de depuración.
@@ -65,58 +138,16 @@ void MainGameState::handleInput()
 
     // Reiniciar el tablero utilizando una nueva semilla.
     if (IsKeyPressed(KEY_R)) {
-        tablero.generar(++semilla);
-
-        jugador1.init(Tablero::centroDeCelda(1, 1));
-        jugador2.init(Tablero::centroDeCelda(COLUMNAS - 2, 1));
-
-        bombasJugador1.clear();
-        bombasJugador2.clear();
+        ++semilla;
+        reiniciarPartida();
     }
 
-    // --- Bomba del jugador 1 -------------------------------------------------
-    bool bombaJugador1Activa = false;
-
-    for (const Bomba& bomba : bombasJugador1) {
-        if (bomba.estaEnCuentaAtras()) {
-            bombaJugador1Activa = true;
-            break;
-        }
+    if (IsKeyPressed(KEY_SPACE)) {
+        intentarPonerBomba(jugador1, bombasJugador1);
     }
 
-    if (jugador1.estaVivo() &&
-        IsKeyPressed(KEY_SPACE) &&
-        !bombaJugador1Activa) {
-
-            Celda celdaBomba =
-                Tablero::pixelACelda(jugador1.getPosicion());
-
-            bombasJugador1.emplace_back(celdaBomba);
-
-        jugador1.permitirAtravesarBomba(celdaBomba);
-    }
-
-
-    // --- Bomba del jugador 2 -------------------------------------------------
-    bool bombaJugador2Activa = false;
-
-    for (const Bomba& bomba : bombasJugador2) {
-        if (bomba.estaEnCuentaAtras()) {
-            bombaJugador2Activa = true;
-            break;
-        }
-    }
-
-    if (jugador2.estaVivo() &&
-        IsKeyPressed(KEY_ENTER) &&
-        !bombaJugador2Activa) {
-
-        Celda celdaBomba =
-            Tablero::pixelACelda(jugador2.getPosicion());
-
-        bombasJugador2.emplace_back(celdaBomba);
-
-        jugador2.permitirAtravesarBomba(celdaBomba);
+    if (IsKeyPressed(KEY_ENTER)) {
+        intentarPonerBomba(jugador2, bombasJugador2);
     }
 
     // Herramienta provisional de depuración.
@@ -131,19 +162,7 @@ void MainGameState::handleInput()
 
 void MainGameState::update(float deltaTime)
 {
-    std::vector<Celda> celdasBombas;
-
-    for (const Bomba& bomba : bombasJugador1) {
-        if (bomba.estaEnCuentaAtras()) {
-            celdasBombas.push_back(bomba.getPosicion());
-        }
-    }
-
-    for (const Bomba& bomba : bombasJugador2) {
-        if (bomba.estaEnCuentaAtras()) {
-            celdasBombas.push_back(bomba.getPosicion());
-        }
-    }
+    std::vector<Celda> celdasBombas = celdasConBomba();
 
     // Cada jugador procesa sus propios controles.
     jugador1.update(deltaTime, tablero, celdasBombas);
@@ -165,6 +184,12 @@ void MainGameState::update(float deltaTime)
             ++bomba;
         }
     }
+
+    // Power-ups: aparecen al romperse su bloque, se pierden si les alcanza
+    // otra explosión y los recoge el primer jugador que pisa la celda.
+    powerUps.actualizar(deltaTime, tablero, celdasEnLlamas());
+    recogerPowerUps(jugador1);
+    recogerPowerUps(jugador2);
 
     // Comprobar si una explosión alcanza a un jugador.
     auto comprobarExplosion = [&](const std::vector<Bomba>& bombas) {
@@ -263,7 +288,7 @@ void MainGameState::render()
     DrawText(
         TextFormat("J1: %s", estadoJugador1),
         20,
-        14,
+        6,
         20,
         jugador1.estaVivo() ? BLUE : GRAY
     );
@@ -276,9 +301,26 @@ void MainGameState::render()
     DrawText(
         textoJugador2,
         ANCHO_VENTANA - anchoJugador2 - 20,
-        14,
+        6,
         20,
         jugador2.estaVivo() ? RED : GRAY
+    );
+
+    // Mejoras de cada jugador: bombas a la vez, alcance y velocidad.
+    DrawText(
+        TextFormat("B%d F%d V%d", jugador1.getMaxBombas(), jugador1.getAlcance(),
+                   (int)jugador1.getVelocidad()),
+        20, 30, 10, LIGHTGRAY
+    );
+
+    const char* mejorasJugador2 =
+        TextFormat("B%d F%d V%d", jugador2.getMaxBombas(), jugador2.getAlcance(),
+                   (int)jugador2.getVelocidad());
+
+    DrawText(
+        mejorasJugador2,
+        ANCHO_VENTANA - MeasureText(mejorasJugador2, 10) - 20,
+        30, 10, LIGHTGRAY
     );
 
     // Línea que separa el HUD del tablero.
@@ -295,6 +337,7 @@ void MainGameState::render()
     // ---------------------------------------------------------------------
 
     tablero.dibujar();
+    powerUps.dibujar();
 
     jugador1.render();
     jugador2.render();
@@ -313,6 +356,7 @@ void MainGameState::render()
 
     if (depuracion) {
         tablero.dibujarDepuracion();
+        powerUps.dibujarDepuracion();
 
         DrawRectangleLinesEx(
             cajaPrueba,
