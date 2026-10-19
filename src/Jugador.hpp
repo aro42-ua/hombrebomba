@@ -2,6 +2,7 @@
 #include <Constantes.hpp>
 #include <vector>
 #include <Tablero.hpp>
+#include <PowerUp.hpp>
 
 extern "C" {
     #include <raylib.h>
@@ -11,7 +12,13 @@ class Jugador {
 private:
     Vector2 posicion;
     float velocidad;
+    float velocidadBase;   // la de inicio de partida; init() la recupera
     float tamano;
+
+    // Mejoras que dan los power-ups. init() las devuelve a sus valores
+    // iniciales en cada partida.
+    int maxBombas = 1;
+    int alcance = ALCANCE_EXPLOSION;
 
 
     //Para que cada jugador guarde sus cuatro teclas
@@ -38,7 +45,7 @@ public:
     // {72.0f, 120.0f} equivale al centro de la celda (1, 1) en píxeles y 
     Jugador(
         Vector2 posInicial = { 72.0f, 120.0f },
-        float vel = 120.0f,
+        float vel = VELOCIDAD_JUGADOR,
         int arriba = KEY_W,
         int abajo = KEY_S,
         int izquierda = KEY_A,
@@ -59,4 +66,11 @@ public:
     void eliminar() { vivo = false; }
 
     void permitirAtravesarBomba(Celda celda);
+
+    // Power-ups. Cada mejora tiene un tope (MAX_BOMBAS, MAX_ALCANCE,
+    // MAX_VELOCIDAD_JUGADOR); por encima del tope el power-up no hace nada.
+    void aplicarPowerUp(TipoPowerUp tipo);
+    int getMaxBombas() const { return maxBombas; }
+    int getAlcance() const { return alcance; }
+    float getVelocidad() const { return velocidad; }
 };
