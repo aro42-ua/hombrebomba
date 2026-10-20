@@ -50,6 +50,17 @@ g++ -o bin/bomberman.exe src/*.cpp -I src/ -I vendor/include/ -L vendor/lib -lra
 bin/bomberman.exe
 ```
 
+## Controles
+
+| | Jugador 1 | Jugador 2 |
+|---|---|---|
+| Moverse | W A S D | flechas |
+| Poner bomba | espacio | Enter |
+
+F1 activa el modo depuración (rejilla, semilla y power-ups tapados) y R empieza otra partida con la semilla siguiente.
+
+Al romper un bloque puede aparecer un power-up: B da una bomba más a la vez, F alarga la llama una celda y V sube la velocidad. Los detalles están en `docs/powerups.md`.
+
 ## Pruebas
 
 Las pruebas automáticas están en `tests/` y se compilan aparte del juego (no abren ventana). Por ejemplo, las del escenario en Linux:
@@ -59,7 +70,17 @@ g++ -o bin/test_tablero tests/test_tablero.cpp src/Tablero.cpp -I src/ -I vendor
 ./bin/test_tablero
 ```
 
-En Windows se cambian las librerías del final igual que al compilar el juego. El programa devuelve 0 si todo pasa.
+Cada programa necesita sus propios ficheros de `src/`; el resto del comando es igual:
+
+| Programa | Ficheros de `src/` |
+|---|---|
+| `tests/test_tablero.cpp` | `Tablero.cpp` |
+| `tests/test_jugador.cpp` | `Jugador.cpp Tablero.cpp` |
+| `tests/test_bomba.cpp` | `Bomba.cpp Tablero.cpp` |
+| `tests/test_resultado_partida.cpp` | `ResultadoPartida.cpp` |
+| `tests/test_powerups.cpp` | `PowerUp.cpp Jugador.cpp Bomba.cpp Tablero.cpp` |
+
+En Windows se cambian las librerías del final igual que al compilar el juego. Cada programa devuelve 0 si todo pasa.
 
 ## Cómo trabajamos
 

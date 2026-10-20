@@ -40,3 +40,13 @@ static const int DIRECCIONES[4][2] = { // direcciones de propagación de la expl
     { -1, 0 },
     { 1, 0 },
 };
+
+// --- Power-ups -------------------------------------------------------------
+// Al generar el tablero se esconden NUM_POWERUPS bajo bloques; aparecen
+// cuando una explosión rompe el bloque.
+constexpr int   NUM_POWERUPS          = 9;
+constexpr int   MAX_BOMBAS            = 5;       // tope de bombas a la vez
+constexpr int   MAX_ALCANCE           = 5;       // tope de alcance de la llama
+constexpr float VELOCIDAD_JUGADOR     = 120.0f;  // velocidad inicial (px/s)
+constexpr float INCREMENTO_VELOCIDAD  = 20.0f;   // lo que suma cada patín
+constexpr float MAX_VELOCIDAD_JUGADOR = 200.0f;
