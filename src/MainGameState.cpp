@@ -4,6 +4,8 @@
 #include <StateMachine.hpp>
 #include <memory>
 #include <ResultadoPartida.hpp>
+#include <cstdlib>
+#include <random>
 
 extern "C" {
     #include <raylib.h>
@@ -50,6 +52,7 @@ void MainGameState::reiniciarPartida()
     // Se genera un tablero limpio al comenzar una partida.
     tablero.generar(semilla);
     powerUps.repartir(tablero, semilla);
+    crearEnemigos();
 
     // Posiciones iniciales de los dos jugadores.
     jugador1.init(Tablero::centroDeCelda(1, 1));
@@ -129,6 +132,101 @@ void MainGameState::recogerPowerUps(Jugador& jugador)
     }
 }
 
+void MainGameState::crearEnemigos()
+{
+    enemigos.clear();
+    enemigos.emplace_back(TipoEnemigo::Globo, Celda{ 1, FILAS - 2 }, semilla + 1);
+    enemigos.emplace_back(TipoEnemigo::Perseguidor, Celda{ COLUMNAS - 2, FILAS - 2 }, semilla + 2);
+
+    // El tercero, en una celda vacía con alguna salida, lejos de los
+    // jugadores y que no esté en las esquinas de los otros dos enemigos.
+    const Celda inicioJugadores[2] = { { 1, 1 }, { COLUMNAS - 2, 1 } };
+    std::vector<Celda> candidatas;
+
+    for (int fila = 1; fila < FILAS - 1; fila++) {
+        for (int col = 1; col < COLUMNAS - 1; col++) {
+            if (!tablero.esTransitable(col, fila)) continue;
+
+            bool tieneSalida = false;
+            for (const auto& d : DIRECCIONES) {
+                if (tablero.esTransitable(col + d[0], fila + d[1])) tieneSalida = true;
+            }
+
+            bool valida = tieneSalida;
+            for (const Celda& j : inicioJugadores) {
+                if (std::abs(col - j.col) + std::abs(fila - j.fila) < DISTANCIA_APARICION) {
+                    valida = false;
+                }
+            }
+            for (const Enemigo& e : enemigos) {
+                Celda c = e.getCelda();
+                if (std::abs(col - c.col) + std::abs(fila - c.fila) < 3) {
+                    valida = false;
+                }
+            }
+            if (valida) candidatas.push_back({ col, fila });
+        }
+    }
+
+    if (!candidatas.empty()) {
+        std::mt19937 generador(semilla + 3);
+        Celda celda = candidatas[generador() % candidatas.size()];
+        enemigos.emplace_back(TipoEnemigo::Globo, celda, semilla + 4);
+    }
+}
+
+void MainGameState::actualizarEnemigos(float deltaTime, const std::vector<Celda>& llamas)
+{
+    std::vector<BombaVista> bombas;
+    for (const std::vector<Bomba>* lista : { &bombasJugador1, &bombasJugador2 }) {
+        for (const Bomba& bomba : *lista) {
+            if (bomba.estaEnCuentaAtras()) {
+                bombas.push_back({ bomba.getPosicion(), bomba.getAlcance() });
+            }
+        }
+    }
+    mapaPeligro.calcular(tablero, bombas, llamas);
+
+    std::vector<Celda> objetivos;
+    for (const Jugador* jugador : { &jugador1, &jugador2 }) {
+        if (jugador->estaVivo()) {
+            objetivos.push_back(Tablero::pixelACelda(jugador->getPosicion()));
+        }
+    }
+
+    for (Enemigo& enemigo : enemigos) {
+        enemigo.update(deltaTime, tablero, mapaPeligro, objetivos);
+
+        Celda celda = enemigo.getCelda();
+        for (const Celda& llama : llamas) {
+            if (llama.col == celda.col && llama.fila == celda.fila) {
+                enemigo.eliminar();
+            }
+        }
+    }
+
+    for (auto it = enemigos.begin(); it != enemigos.end();) {
+        if (it->estaVivo()) ++it;
+        else it = enemigos.erase(it);
+    }
+
+    // La caja del enemigo se encoge un poco: así un roce de esquina no mata.
+    for (const Enemigo& enemigo : enemigos) {
+        Rectangle caja = enemigo.getCajaColision();
+        caja.x += MARGEN_CONTACTO;
+        caja.y += MARGEN_CONTACTO;
+        caja.width -= 2 * MARGEN_CONTACTO;
+        caja.height -= 2 * MARGEN_CONTACTO;
+
+        for (Jugador* jugador : { &jugador1, &jugador2 }) {
+            if (jugador->estaVivo() &&
+                CheckCollisionRecs(caja, jugador->getCajaColision())) {
+                jugador->eliminar();
+            }
+        }
+    }
+}
+
 void MainGameState::handleInput()
 {
     // Activar/desactivar información de depuración.
@@ -187,9 +285,12 @@ void MainGameState::update(float deltaTime)
 
     // Power-ups: aparecen al romperse su bloque, se pierden si les alcanza
     // otra explosión y los recoge el primer jugador que pisa la celda.
-    powerUps.actualizar(deltaTime, tablero, celdasEnLlamas());
+    std::vector<Celda> llamas = celdasEnLlamas();
+    powerUps.actualizar(deltaTime, tablero, llamas);
     recogerPowerUps(jugador1);
     recogerPowerUps(jugador2);
+
+    actualizarEnemigos(deltaTime, llamas);
 
     // Comprobar si una explosión alcanza a un jugador.
     auto comprobarExplosion = [&](const std::vector<Bomba>& bombas) {
@@ -323,6 +424,15 @@ void MainGameState::render()
         30, 10, LIGHTGRAY
     );
 
+    const char* textoEnemigos = TextFormat("Enemigos: %d", (int)enemigos.size());
+    DrawText(
+        textoEnemigos,
+        ANCHO_VENTANA / 2 - MeasureText(textoEnemigos, 20) / 2,
+        14,
+        20,
+        RAYWHITE
+    );
+
     // Línea que separa el HUD del tablero.
     DrawLine(
         0,
@@ -338,6 +448,10 @@ void MainGameState::render()
 
     tablero.dibujar();
     powerUps.dibujar();
+
+    for (const Enemigo& enemigo : enemigos) {
+        enemigo.render();
+    }
 
     jugador1.render();
     jugador2.render();
@@ -357,6 +471,20 @@ void MainGameState::render()
     if (depuracion) {
         tablero.dibujarDepuracion();
         powerUps.dibujarDepuracion();
+
+        // Celdas que la IA considera peligrosas y lo que decide cada enemigo.
+        for (int fila = 0; fila < FILAS; fila++) {
+            for (int col = 0; col < COLUMNAS; col++) {
+                if (mapaPeligro.hayPeligro({ col, fila })) {
+                    Vector2 esquina = Tablero::celdaAPixel(col, fila);
+                    DrawRectangle((int)esquina.x, (int)esquina.y, TAM_CELDA, TAM_CELDA,
+                                  Fade(RED, 0.25f));
+                }
+            }
+        }
+        for (const Enemigo& enemigo : enemigos) {
+            enemigo.renderDepuracion();
+        }
 
         DrawRectangleLinesEx(
             cajaPrueba,

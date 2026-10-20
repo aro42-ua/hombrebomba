@@ -57,9 +57,11 @@ bin/bomberman.exe
 | Moverse | W A S D | flechas |
 | Poner bomba | espacio | Enter |
 
-F1 activa el modo depuración (rejilla, semilla y power-ups tapados) y R empieza otra partida con la semilla siguiente.
+F1 activa el modo depuración (rejilla, semilla, power-ups tapados, celdas peligrosas y lo que decide cada enemigo) y R empieza otra partida con la semilla siguiente.
 
 Al romper un bloque puede aparecer un power-up: B da una bomba más a la vez, F alarga la llama una celda y V sube la velocidad. Los detalles están en `docs/powerups.md`.
+
+En cada partida hay tres enemigos. Los globos (círculos) pasean al azar y el perseguidor (rombo) huye de las bombas y va a por el jugador que tenga cerca. Tocar a un enemigo elimina al jugador, y una llama elimina al enemigo. Cómo funciona su IA está en `docs/ia-enemigos.md`.
 
 ## Pruebas
 
@@ -79,6 +81,7 @@ Cada programa necesita sus propios ficheros de `src/`; el resto del comando es i
 | `tests/test_bomba.cpp` | `Bomba.cpp Tablero.cpp` |
 | `tests/test_resultado_partida.cpp` | `ResultadoPartida.cpp` |
 | `tests/test_powerups.cpp` | `PowerUp.cpp Jugador.cpp Bomba.cpp Tablero.cpp` |
+| `tests/test_ia_enemigos.cpp` | `Enemigo.cpp IAEnemigo.cpp Tablero.cpp` |
 
 En Windows se cambian las librerías del final igual que al compilar el juego. Cada programa devuelve 0 si todo pasa.
 
