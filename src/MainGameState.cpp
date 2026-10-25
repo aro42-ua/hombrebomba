@@ -241,11 +241,13 @@ void MainGameState::handleInput()
     }
 
     if (IsKeyPressed(KEY_SPACE)) {
-        intentarPonerBomba(jugador1, bombasJugador1);
+        EventoTablero evento{ TipoEventoTablero::PonerBomba, 1 };
+        tablero.manejarEvento(evento, jugador1, jugador2, bombasJugador1, bombasJugador2, 0.0f);
     }
 
     if (IsKeyPressed(KEY_ENTER)) {
-        intentarPonerBomba(jugador2, bombasJugador2);
+        EventoTablero evento{ TipoEventoTablero::PonerBomba, 2 };
+        tablero.manejarEvento(evento, jugador1, jugador2, bombasJugador1, bombasJugador2, 0.0f);
     }
 
     // Herramienta provisional de depuración.
@@ -254,15 +256,34 @@ void MainGameState::handleInput()
         tablero.destruirBloque(c.col, c.fila);
     }
 
-    jugador1.handleInput();
-    jugador2.handleInput();
+    Vector2 dirJugador1 = { 0.0f, 0.0f };
+    if (IsKeyDown(KEY_D)) dirJugador1.x += 1.0f;
+    if (IsKeyDown(KEY_A)) dirJugador1.x -= 1.0f;
+    if (IsKeyDown(KEY_S)) dirJugador1.y += 1.0f;
+    if (IsKeyDown(KEY_W)) dirJugador1.y -= 1.0f;
+
+    Vector2 dirJugador2 = { 0.0f, 0.0f };
+    if (IsKeyDown(KEY_RIGHT)) dirJugador2.x += 1.0f;
+    if (IsKeyDown(KEY_LEFT)) dirJugador2.x -= 1.0f;
+    if (IsKeyDown(KEY_DOWN)) dirJugador2.y += 1.0f;
+    if (IsKeyDown(KEY_UP)) dirJugador2.y -= 1.0f;
+
+    if (dirJugador1.x != 0.0f || dirJugador1.y != 0.0f) {
+        EventoTablero evento{ TipoEventoTablero::MoverJugador, 1, dirJugador1 };
+        tablero.manejarEvento(evento, jugador1, jugador2, bombasJugador1, bombasJugador2, 0.016f);
+    }
+
+    if (dirJugador2.x != 0.0f || dirJugador2.y != 0.0f) {
+        EventoTablero evento{ TipoEventoTablero::MoverJugador, 2, dirJugador2 };
+        tablero.manejarEvento(evento, jugador1, jugador2, bombasJugador1, bombasJugador2, 0.016f);
+    }
 }
 
 void MainGameState::update(float deltaTime)
 {
     std::vector<Celda> celdasBombas = celdasConBomba();
 
-    // Cada jugador procesa sus propios controles.
+    // Movimiento del jugador queda centralizado en Tablero por evento.
     jugador1.update(deltaTime, tablero, celdasBombas);
     jugador2.update(deltaTime, tablero, celdasBombas);
 
@@ -295,31 +316,25 @@ void MainGameState::update(float deltaTime)
     // Comprobar si una explosión alcanza a un jugador.
     auto comprobarExplosion = [&](const std::vector<Bomba>& bombas) {
         for (const Bomba& bomba : bombas) {
-
-            // Si sigue en cuenta atrás todavía no hace daño.
             if (bomba.estaEnCuentaAtras()) {
                 continue;
             }
 
-            Celda celdaJugador1 =
-                Tablero::pixelACelda(jugador1.getPosicion());
-
-            Celda celdaJugador2 =
-                Tablero::pixelACelda(jugador2.getPosicion());
+            Celda celdaJugador1 = Tablero::pixelACelda(jugador1.getPosicion());
+            Celda celdaJugador2 = Tablero::pixelACelda(jugador2.getPosicion());
 
             for (const Celda& celdaExplosion : bomba.getCeldasExplosion()) {
-
+              
                 if (jugador1.estaVivo() &&
                     celdaJugador1.col == celdaExplosion.col &&
                     celdaJugador1.fila == celdaExplosion.fila) {
-
                     jugador1.eliminar();
                 }
 
                 if (jugador2.estaVivo() &&
                     celdaJugador2.col == celdaExplosion.col &&
                     celdaJugador2.fila == celdaExplosion.fila) {
-
+                    
                     jugador2.eliminar();
                 }
             }
@@ -330,14 +345,12 @@ void MainGameState::update(float deltaTime)
     comprobarExplosion(bombasJugador2);
 
     if (!partidaTerminada) {
+        ResultadoPartida resultado = calcularResultadoPartida(
+            jugador1.estaVivo(),
+            jugador2.estaVivo()
+        );
 
-    ResultadoPartida resultado = calcularResultadoPartida(
-        jugador1.estaVivo(),
-        jugador2.estaVivo()
-    );
-
-    if (resultado != ResultadoPartida::EnCurso) {
-
+        if (resultado != ResultadoPartida::EnCurso) {
             if (resultado == ResultadoPartida::Jugador1) {
                 ganador = 1;
             }
@@ -357,7 +370,6 @@ void MainGameState::update(float deltaTime)
         }
     }
 
-    // Banco de pruebas del escenario.
     Vector2 raton = GetMousePosition();
 
     cajaPrueba = {

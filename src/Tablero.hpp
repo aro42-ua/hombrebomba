@@ -19,6 +19,9 @@ extern "C" {
     #include <raylib.h>
 }
 
+class Jugador;
+class Bomba;
+
 // Lo que puede haber en una celda del tablero. Solo lo ESTRUCTURAL:
 // bombas, llamas, jugador y enemigos viven en sus propias clases.
 enum class TipoCelda { Vacio, Muro, Bloque };
@@ -27,6 +30,17 @@ enum class TipoCelda { Vacio, Muro, Bloque };
 struct Celda {
     int col;
     int fila;
+};
+
+enum class TipoEventoTablero {
+    MoverJugador,
+    PonerBomba
+};
+
+struct EventoTablero {
+    TipoEventoTablero tipo;
+    int jugadorId = 0;
+    Vector2 direccion = { 0.0f, 0.0f };
 };
 
 class Tablero {
@@ -39,6 +53,11 @@ public:
     // Con la misma semilla genera exactamente el mismo tablero.
     void generar(unsigned int semilla);
     unsigned int getSemilla() const;
+
+    // --- Eventos ------------------------------------------------------------
+    bool manejarEvento(const EventoTablero& evento, Jugador& jugador1, Jugador& jugador2,
+                       std::vector<Bomba>& bombasJugador1, std::vector<Bomba>& bombasJugador2,
+                       float deltaTime);
 
     // --- Dibujo ------------------------------------------------------------
     void dibujar() const;
@@ -53,12 +72,17 @@ public:
     // ¿La caja (en píxeles) toca alguna celda no transitable?
     // Requisito: la caja debe ser más pequeña que una celda.
     bool colisiona(Rectangle caja) const;
+    bool colisionaConBombas(Rectangle caja, const std::vector<Celda>& bombas,
+                            const Celda* bombaIgnorada = nullptr) const;
 
     // --- Modificación ------------------------------------------------------
     // Si en (col, fila) hay un Bloque, lo convierte en Vacio y devuelve true.
     // En cualquier otro caso (muro, vacío, fuera de límites) no hace nada y
     // devuelve false. La usa el Paquete 3 al propagar una explosión.
     bool destruirBloque(int col, int fila);
+    bool moverJugador(Jugador& jugador, const std::vector<Celda>& bombas,
+                      float deltaTime, Vector2 direccion);
+    bool intentarPonerBomba(Jugador& jugador, std::vector<Bomba>& bombas) const;
 
     // --- Conversiones celda <-> píxel ----------------------------------------
     static Vector2 celdaAPixel(int col, int fila);    // esquina sup. izquierda

@@ -36,11 +36,6 @@ private:
     bool puedeAtravesarBomba = false;
     Celda bombaAtravesable = { -1, -1 };
 
-    bool colisionaConBombas(
-        Rectangle caja,
-        const std::vector<Celda>& bombas
-    ) const;
-
 public:
     // {72.0f, 120.0f} equivale al centro de la celda (1, 1) en píxeles y 
     Jugador(
@@ -60,12 +55,16 @@ public:
 
     Rectangle getCajaColision() const;
     Vector2 getPosicion() const { return posicion; }
+    void setPosicion(Vector2 nuevaPosicion) { posicion = nuevaPosicion; }
 
     //Control de vida
     bool estaVivo() const { return vivo; }
     void eliminar() { vivo = false; }
 
     void permitirAtravesarBomba(Celda celda);
+    void desactivarAtravesarBomba() { puedeAtravesarBomba = false; }
+    bool puedeAtravesarUnaBomba() const { return puedeAtravesarBomba; }
+    Celda getBombaAtravesable() const { return bombaAtravesable; }
 
     // Power-ups. Cada mejora tiene un tope (MAX_BOMBAS, MAX_ALCANCE,
     // MAX_VELOCIDAD_JUGADOR); por encima del tope el power-up no hace nada.
