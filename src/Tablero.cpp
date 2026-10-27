@@ -7,6 +7,8 @@
 #include <Tablero.hpp>
 #include <cmath>    // std::floor
 #include <cstdlib>  // std::abs
+#include <Jugador.hpp>
+#include <Bomba.hpp>
 
 // Colores del escenario (figuras elementales, sin sprites en el Hito 1)
 static const Color COLOR_SUELO        = {  46, 125,  79, 255 };
@@ -77,18 +79,167 @@ bool Tablero::esZonaLibre(int col, int fila) const {
     return false;
 }
 
-// ===========================================================================
-// Modificación
-// ===========================================================================
 
-// Si getCelda dice Bloque, la celda está por fuerza dentro del tablero
-// (fuera devuelve Muro), así que setCelda no puede salirse del vector.
 bool Tablero::destruirBloque(int col, int fila) {
     if (getCelda(col, fila) != TipoCelda::Bloque) {
         return false;
     }
     setCelda(col, fila, TipoCelda::Vacio);
     return true;
+}
+
+bool Tablero::colisionaConBombas(
+    Rectangle caja,
+    const std::vector<Celda>& bombas,
+    const Celda* bombaIgnorada
+) const {
+    for (const Celda& celda : bombas) {
+        if (bombaIgnorada != nullptr &&
+            celda.col == bombaIgnorada->col &&
+            celda.fila == bombaIgnorada->fila) {
+            continue;
+        }
+
+        Vector2 esquina = Tablero::celdaAPixel(celda.col, celda.fila);
+        Rectangle cajaBomba = {
+            esquina.x,
+            esquina.y,
+            static_cast<float>(TAM_CELDA),
+            static_cast<float>(TAM_CELDA)
+        };
+
+        if (CheckCollisionRecs(caja, cajaBomba)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Tablero::moverJugador(Jugador& jugador, const std::vector<Celda>& bombas,
+                          float deltaTime, Vector2 direccion) {
+    if (!jugador.estaVivo()) {
+        return false;
+    }
+
+    Vector2 posicionActual = jugador.getPosicion();
+    float tamano = 32.0f;
+    const Celda* bombaIgnorada = nullptr;
+    Celda bombaAtravesable = { -1, -1 };
+
+    if (jugador.puedeAtravesarUnaBomba()) {
+        bombaAtravesable = jugador.getBombaAtravesable();
+        bombaIgnorada = &bombaAtravesable;
+    }
+
+    if (direccion.x != 0.0f && direccion.y != 0.0f) {
+        direccion.x *= 0.7071f;
+        direccion.y *= 0.7071f;
+    }
+
+    auto cajaEn = [&](float x, float y) {
+        return Rectangle {
+            x - tamano / 2.0f,
+            y - tamano / 2.0f,
+            tamano,
+            tamano
+        };
+    };
+
+    float desplazamientoX = direccion.x * jugador.getVelocidad() * deltaTime;
+    float desplazamientoY = direccion.y * jugador.getVelocidad() * deltaTime;
+
+    // Intento principal: mover la caja completa en la dirección pedida.
+    // Esto permite que W+D funcione como diagonal con velocidad reducida.
+    Vector2 destinoFinal = {
+        posicionActual.x + desplazamientoX,
+        posicionActual.y + desplazamientoY
+    };
+
+    Rectangle cajaFinal = cajaEn(destinoFinal.x, destinoFinal.y);
+    if ((desplazamientoX != 0.0f || desplazamientoY != 0.0f) &&
+        !colisiona(cajaFinal) &&
+        !colisionaConBombas(cajaFinal, bombas, bombaIgnorada)) {
+        jugador.setPosicion(destinoFinal);
+        return true;
+    }
+
+    // Si hay colisión en la diagonal, se hace un movimiento por ejes para que
+    // siga siendo fluido y no se quede bloqueado en una esquina.
+    if (desplazamientoX != 0.0f) {
+        float nuevaX = posicionActual.x + desplazamientoX;
+        Rectangle cajaX = cajaEn(nuevaX, posicionActual.y);
+        if (!colisiona(cajaX) && !colisionaConBombas(cajaX, bombas, bombaIgnorada)) {
+            jugador.setPosicion({ nuevaX, posicionActual.y });
+        }
+    }
+
+    if (desplazamientoY != 0.0f) {
+        float nuevaY = posicionActual.y + desplazamientoY;
+        Rectangle cajaY = cajaEn(posicionActual.x, nuevaY);
+        if (!colisiona(cajaY) && !colisionaConBombas(cajaY, bombas, bombaIgnorada)) {
+            jugador.setPosicion({ posicionActual.x, nuevaY });
+        }
+    }
+
+    return true;
+}
+
+bool Tablero::intentarPonerBomba(Jugador& jugador, std::vector<Bomba>& bombas) const {
+    if (!jugador.estaVivo()) {
+        return false;
+    }
+
+    int bombasActivas = 0;
+    for (const Bomba& bomba : bombas) {
+        if (bomba.estaEnCuentaAtras()) {
+            bombasActivas++;
+        }
+    }
+    if (bombasActivas >= jugador.getMaxBombas()) {
+        return false;
+    }
+
+    Celda celdaBomba = Tablero::pixelACelda(jugador.getPosicion());
+    for (const Bomba& bomba : bombas) {
+        Celda p = bomba.getPosicion();
+        if (p.col == celdaBomba.col && p.fila == celdaBomba.fila) {
+            return false;
+        }
+    }
+
+    bombas.emplace_back(celdaBomba, jugador.getAlcance());
+    jugador.permitirAtravesarBomba(celdaBomba);
+    return true;
+}
+
+bool Tablero::manejarEvento(const EventoTablero& evento,
+                           Jugador& jugador1,
+                           Jugador& jugador2,
+                           std::vector<Bomba>& bombasJugador1,
+                           std::vector<Bomba>& bombasJugador2,
+                           float deltaTime) {
+    switch (evento.tipo) {
+        case TipoEventoTablero::MoverJugador: {
+            Jugador* jugador = (evento.jugadorId == 1) ? &jugador1 : &jugador2;
+            std::vector<Celda> bombas = (evento.jugadorId == 1) ?
+                std::vector<Celda>{} : std::vector<Celda>{};
+            std::vector<Celda> bombasActivas;
+            for (const Bomba& bomba : bombasJugador1) {
+                if (bomba.estaEnCuentaAtras()) bombasActivas.push_back(bomba.getPosicion());
+            }
+            for (const Bomba& bomba : bombasJugador2) {
+                if (bomba.estaEnCuentaAtras()) bombasActivas.push_back(bomba.getPosicion());
+            }
+            return moverJugador(*jugador, bombasActivas, deltaTime, evento.direccion);
+        }
+        case TipoEventoTablero::PonerBomba: {
+            Jugador* jugador = (evento.jugadorId == 1) ? &jugador1 : &jugador2;
+            std::vector<Bomba>& destino = (evento.jugadorId == 1) ? bombasJugador1 : bombasJugador2;
+            return intentarPonerBomba(*jugador, destino);
+        }
+    }
+    return false;
 }
 
 // Orden de decisión para cada celda (importa: si la zona libre se mirara antes
@@ -100,7 +251,6 @@ bool Tablero::destruirBloque(int col, int fila) {
 void Tablero::generar(unsigned int semilla) {
     this->semilla = semilla;
     SetRandomSeed(semilla);
-    // Todo a Vacio: un reinicio no arrastra nada de la partida anterior.
     celdas.assign(COLUMNAS * FILAS, TipoCelda::Vacio);
 
     for (int fila = 0; fila < FILAS; fila++) {
@@ -194,7 +344,6 @@ void Tablero::dibujar() const {
                 case TipoCelda::Bloque:
                     DrawRectangleRec(r, COLOR_BLOQUE);
                     DrawRectangleLinesEx(r, 2, COLOR_BLOQUE_BORDE);
-                    // Una línea horizontal para que parezca un ladrillo
                     DrawLineEx({ r.x, r.y + r.height / 2 },
                                { r.x + r.width, r.y + r.height / 2 },
                                2, COLOR_BLOQUE_BORDE);
