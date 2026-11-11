@@ -46,6 +46,7 @@
 
 # Ejecutables: se publican en las Releases de GitHub, no en el repo
 bin/
+build/
 game
 
 # Editores y sistema
