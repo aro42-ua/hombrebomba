@@ -17,15 +17,16 @@ int main()
     Bomba bomba({ 4, 6 });
     Celda posicion = bomba.getPosicion();
     bool posicionCorrecta = posicion.col == 4 && posicion.fila == 6;
-    Bomba bombaPrueba({ 1, 1 });
+    // Con la semilla 42: (1,1) libre, (3,1) bloque, (2,0) borde y (2,2) pilar
+    Bomba bombaPrueba({ 2, 1 });
     bool sigueArmadaAntesDelLimite = !bombaPrueba.actualizar(2.99f, tablero)
                                   && bombaPrueba.estaEnCuentaAtras();
     bool detonaAlSuperarTresSegundos = !bombaPrueba.actualizar(0.02f, tablero)
                                     && !bombaPrueba.estaEnCuentaAtras();
     const std::vector<Celda>& celdas = bombaPrueba.getCeldasExplosion();
-    bool centroIncluido = contiene(celdas, 1, 1);
-    bool muroDetieneExplosion = !contiene(celdas, 0, 1) && !contiene(celdas, 1, 0);
-    bool bloqueAlcanzadoYDestruido = contiene(celdas, 2, 1)
+    bool centroIncluido = contiene(celdas, 2, 1);
+    bool muroDetieneExplosion = !contiene(celdas, 2, 0) && !contiene(celdas, 2, 2);
+    bool bloqueAlcanzadoYDestruido = contiene(celdas, 1, 1)
                                   && contiene(celdas, 3, 1)
                                   && tablero.getCelda(3, 1) == TipoCelda::Vacio;
     bool desapareceTrasDuracion = !bombaPrueba.actualizar(0.59f, tablero)
