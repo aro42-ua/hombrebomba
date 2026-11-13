@@ -25,7 +25,7 @@ class StateMachine
     private:
         std::stack<std::unique_ptr<GameState>> states_machine;
         std::unique_ptr<GameState> new_state;
-        bool is_running;
+        bool is_running = true;
 
         bool is_removing = false,
              is_Adding = false,
