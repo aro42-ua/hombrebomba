@@ -15,6 +15,8 @@ tests/             pruebas automáticas (se compilan aparte del juego)
 vendor/include/    cabeceras de raylib (raylib.h, raymath.h, rlgl.h)
 vendor/lib/        libraylib.a (no se sube: cada uno la compila, ver abajo)
 bin/               ejecutable compilado (no se sube)
+build/             objetos intermedios de make (no se sube)
+Makefile           compilación del juego y las pruebas
 ```
 
 ## Preparar raylib (solo la primera vez)
@@ -34,7 +36,20 @@ Copia `libraylib.a` a `vendor/lib/` de este repositorio. La carpeta `raylib/` cl
 
 ## Compilar y ejecutar
 
-No usamos Makefiles (lo prohíbe el enunciado del Hito 1). Todo se compila con un único comando desde la raíz del repo. Si no existe la carpeta `bin/`, créala antes.
+Se compila con el `Makefile` de la raíz (en Windows, `mingw32-make` si `make` no existe). Detecta solo el sistema operativo y todos los `.cpp` de `src/`, así que no hay que tocarlo al añadir ficheros; solo recompila lo que ha cambiado, incluidas las cabeceras.
+
+```bash
+make            # compila el juego en bin/bomberman (objetivo por defecto, = make all)
+make -j4        # igual, en paralelo
+make clean      # borra build/ y los ejecutables
+./bin/bomberman
+```
+
+Es un único Makefile para todas las carpetas (estrategia *monolítica*): `make` ve el grafo de dependencias completo, algo que se pierde con un Makefile por carpeta (*make* recursivo), y el proyecto es lo bastante pequeño como para no necesitarlo. Opciones útiles: `make CXXFLAGS="-std=c++17 -O2"` para optimizar y `make CXX="ccache g++"` para cachear la compilación.
+
+El Makefile necesita una shell POSIX (usa `mkdir` y `rm`): en Windows, lánzalo desde Git Bash o w64devkit. Desde PowerShell funciona si antes añades el `sh` de Git al PATH: `$env:PATH = "C:\Program Files\Git\usr\bin;" + $env:PATH`.
+
+Sin Makefile, el comando equivalente (Hito 1) sigue valiendo. Si no existe la carpeta `bin/`, créala antes.
 
 Linux:
 
@@ -65,7 +80,13 @@ En cada partida hay tres enemigos. Los globos (círculos) pasean al azar y el pe
 
 ## Pruebas
 
-Las pruebas automáticas están en `tests/` y se compilan aparte del juego (no abren ventana). Por ejemplo, las del escenario en Linux:
+Las pruebas automáticas están en `tests/` y se compilan aparte del juego (no abren ventana). Cada `tests/*.cpp` es un ejecutable en `bin/`, y `make test` los compila y ejecuta todos (se detiene en el primero que falla):
+
+```bash
+make test
+```
+
+A mano, por ejemplo las del escenario en Linux:
 
 ```bash
 g++ -o bin/test_tablero tests/test_tablero.cpp src/Tablero.cpp -I src/ -I vendor/include/ -L vendor/lib -lraylib -lGL -lm -lpthread -lrt -lX11
