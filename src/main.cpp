@@ -1,5 +1,5 @@
 #include <StateMachine.hpp>
-#include <MainGameState.hpp>
+#include <MenuState.hpp>
 #include <Constantes.hpp>
 #include <memory>
 #include <chrono>
@@ -26,10 +26,12 @@ int main(int argc, char* argv[])
     float delta_time = 0.0f;
 
     StateMachine state_machine = StateMachine();
-    state_machine.add_state(std::make_unique<MainGameState>(semilla), false);
+    state_machine.add_state(std::make_unique<MenuState>(semilla), false);
     state_machine.handle_state_changes(delta_time);
 
-    while (!state_machine.is_game_ending() && !WindowShouldClose())
+    while (state_machine.isRunning() &&
+           !state_machine.is_game_ending() &&
+           !WindowShouldClose())
     {
         delta_time = GetFrameTime();
 
