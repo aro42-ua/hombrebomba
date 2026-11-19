@@ -11,6 +11,7 @@ public:
     explicit Bomba(Celda posicion, int alcance = ALCANCE_EXPLOSION);
 
     bool actualizar(float deltaTime, Tablero& tablero);
+    void detonar(Tablero& tablero);
     void dibujar() const;
     Celda getPosicion() const { return posicion; }
     int getAlcance() const { return alcance; }

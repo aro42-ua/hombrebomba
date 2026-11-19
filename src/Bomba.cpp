@@ -29,13 +29,19 @@ void Bomba::iniciarExplosion(Tablero& tablero) {
     }
 }
 
+void Bomba::detonar(Tablero& tablero) {
+    if (fase != Fase::CuentaAtras) return;
+
+    iniciarExplosion(tablero);
+    tiempoTranscurrido = 0.0f;
+    fase = Fase::Explosion;
+}
+
 bool Bomba::actualizar(float deltaTime, Tablero& tablero) {
     tiempoTranscurrido += deltaTime;
     if (fase == Fase::CuentaAtras) {
         if (tiempoTranscurrido >= DURACION_BOMBA) {
-            iniciarExplosion(tablero);
-            tiempoTranscurrido = 0.0f;
-            fase = Fase::Explosion;
+            detonar(tablero);
         }
         return false;
     }

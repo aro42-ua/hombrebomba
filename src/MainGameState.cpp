@@ -304,6 +304,34 @@ void MainGameState::update(float deltaTime)
         }
     }
 
+    // Las llamas detonan las bombas que alcanzan; repetir para propagar
+    // también las cadenas de más de dos bombas durante este mismo update.
+    std::vector<Bomba>* listasBombas[] = { &bombasJugador1, &bombasJugador2 };
+    bool huboDetonacion;
+    do {
+        huboDetonacion = false;
+        for (const std::vector<Bomba>* fuentes : listasBombas) {
+            for (const Bomba& fuente : *fuentes) {
+                if (fuente.estaEnCuentaAtras()) continue;
+
+                for (std::vector<Bomba>* objetivos : listasBombas) {
+                    for (Bomba& objetivo : *objetivos) {
+                        if (!objetivo.estaEnCuentaAtras()) continue;
+
+                        for (const Celda& celda : fuente.getCeldasExplosion()) {
+                            Celda posicion = objetivo.getPosicion();
+                            if (celda.col == posicion.col && celda.fila == posicion.fila) {
+                                objetivo.detonar(tablero);
+                                huboDetonacion = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } while (huboDetonacion);
+
     // Power-ups: aparecen al romperse su bloque, se pierden si les alcanza
     // otra explosión y los recoge el primer jugador que pisa la celda.
     std::vector<Celda> llamas = celdasEnLlamas();
