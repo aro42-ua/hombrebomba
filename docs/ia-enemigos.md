@@ -126,7 +126,7 @@ Con F1, además de lo que ya había, se ven:
 Se compila con:
 
 ```bash
-g++ -o bin/test_ia_enemigos tests/test_ia_enemigos.cpp src/Enemigo.cpp src/IAEnemigo.cpp src/Tablero.cpp -I src/ -I vendor/include/ -L vendor/lib -lraylib -lGL -lm -lpthread -lrt -lX11
+g++ -o bin/test_ia_enemigos tests/test_ia_enemigos.cpp src/entities/Enemigo.cpp src/ai/IAEnemigo.cpp src/board/Tablero.cpp -I src/entities/ -I src/ai/ -I src/board/ -I src/game/ -I vendor/include/ -L vendor/lib -lraylib -lGL -lm -lpthread -lrt -lX11
 ./bin/test_ia_enemigos
 ```
 

@@ -10,7 +10,13 @@ Ahora mismo estamos en el Hito 1 (Alpha), que se entrega el 28/10/2026.
 
 ```
 assets/            recursos gráficos y de sonido
-src/               código fuente: cabeceras (.hpp) y fuentes (.cpp) juntas
+src/
+  entities/        Jugador, Enemigo, Bomba y PowerUp
+  game/            estados, constantes y resultados de partida
+  ai/              IAEnemigo
+  board/           Tablero
+  core/            StateMachine
+  main.cpp         punto de entrada
 tests/             pruebas automáticas (se compilan aparte del juego)
 vendor/include/    cabeceras de raylib (raylib.h, raymath.h, rlgl.h)
 vendor/lib/        libraylib.a (no se sube: cada uno la compila, ver abajo)
@@ -36,7 +42,7 @@ Copia `libraylib.a` a `vendor/lib/` de este repositorio. La carpeta `raylib/` cl
 
 ## Compilar y ejecutar
 
-Se compila con el `Makefile` de la raíz (en Windows, `mingw32-make` si `make` no existe). Detecta solo el sistema operativo y todos los `.cpp` de `src/`, así que no hay que tocarlo al añadir ficheros; solo recompila lo que ha cambiado, incluidas las cabeceras.
+Se compila con el `Makefile` de la raíz (en Windows, `mingw32-make` si `make` no existe). Detecta recursivamente los `.cpp` de `src/` y añade las carpetas de cabeceras al include path, así que no hay que cambiarlo al añadir ficheros dentro de estas carpetas; solo recompila lo que ha cambiado, incluidas las cabeceras.
 
 ```bash
 make            # compila el juego en bin/bomberman (objetivo por defecto, = make all)
@@ -48,22 +54,6 @@ make clean      # borra build/ y los ejecutables
 Es un único Makefile para todas las carpetas (estrategia *monolítica*): `make` ve el grafo de dependencias completo, algo que se pierde con un Makefile por carpeta (*make* recursivo), y el proyecto es lo bastante pequeño como para no necesitarlo. Opciones útiles: `make CXXFLAGS="-std=c++17 -O2"` para optimizar y `make CXX="ccache g++"` para cachear la compilación.
 
 El Makefile necesita una shell POSIX (usa `mkdir` y `rm`): en Windows, lánzalo desde Git Bash o w64devkit. Desde PowerShell funciona si antes añades el `sh` de Git al PATH: `$env:PATH = "C:\Program Files\Git\usr\bin;" + $env:PATH`.
-
-Sin Makefile, el comando equivalente (Hito 1) sigue valiendo. Si no existe la carpeta `bin/`, créala antes.
-
-Linux:
-
-```bash
-g++ -o bin/bomberman src/*.cpp -I src/ -I vendor/include/ -L vendor/lib -lraylib -lGL -lm -lpthread -lrt -lX11
-./bin/bomberman
-```
-
-Windows:
-
-```bash
-g++ -o bin/bomberman.exe src/*.cpp -I src/ -I vendor/include/ -L vendor/lib -lraylib -lopengl32 -lgdi32 -lwinmm
-bin/bomberman.exe
-```
 
 ## Controles
 
@@ -89,7 +79,7 @@ make test
 A mano, por ejemplo las del escenario en Linux:
 
 ```bash
-g++ -o bin/test_tablero tests/test_tablero.cpp src/Tablero.cpp -I src/ -I vendor/include/ -L vendor/lib -lraylib -lGL -lm -lpthread -lrt -lX11
+g++ -o bin/test_tablero tests/test_tablero.cpp src/board/Tablero.cpp -I src/board/ -I src/game/ -I vendor/include/ -L vendor/lib -lraylib -lGL -lm -lpthread -lrt -lX11
 ./bin/test_tablero
 ```
 
@@ -97,12 +87,12 @@ Cada programa necesita sus propios ficheros de `src/`; el resto del comando es i
 
 | Programa | Ficheros de `src/` |
 |---|---|
-| `tests/test_tablero.cpp` | `Tablero.cpp` |
-| `tests/test_jugador.cpp` | `Jugador.cpp Tablero.cpp` |
-| `tests/test_bomba.cpp` | `Bomba.cpp Tablero.cpp` |
-| `tests/test_resultado_partida.cpp` | `ResultadoPartida.cpp` |
-| `tests/test_powerups.cpp` | `PowerUp.cpp Jugador.cpp Bomba.cpp Tablero.cpp` |
-| `tests/test_ia_enemigos.cpp` | `Enemigo.cpp IAEnemigo.cpp Tablero.cpp` |
+| `tests/test_tablero.cpp` | `board/Tablero.cpp` |
+| `tests/test_jugador.cpp` | `entities/Jugador.cpp board/Tablero.cpp` |
+| `tests/test_bomba.cpp` | `entities/Bomba.cpp board/Tablero.cpp` |
+| `tests/test_resultado_partida.cpp` | `game/ResultadoPartida.cpp` |
+| `tests/test_powerups.cpp` | `entities/PowerUp.cpp entities/Jugador.cpp entities/Bomba.cpp board/Tablero.cpp` |
+| `tests/test_ia_enemigos.cpp` | `entities/Enemigo.cpp ai/IAEnemigo.cpp board/Tablero.cpp` |
 
 En Windows se cambian las librerías del final igual que al compilar el juego. Cada programa devuelve 0 si todo pasa.
 

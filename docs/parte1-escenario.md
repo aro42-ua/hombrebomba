@@ -11,7 +11,7 @@ La Parte 1 se encarga del escenario del juego: la estructura del tablero, los mu
 
 El proyecto parte de la [plantilla de la asignatura](https://github.com/antoniorv6/DCAGII-Game-Template), creada con la opción *Use this template* de GitHub, y respeta su organización:
 
-- Todo el código está en `src/`, con las cabeceras (`.hpp`) junto a los fuentes (`.cpp`), y se incluye con `#include <Fichero.hpp>` gracias a la opción `-I src/`.
+- El código está en `src/`, organizado por responsabilidades; cada cabecera (`.hpp`) está junto a su fuente (`.cpp`). El Makefile añade las carpetas al include path, por lo que se mantiene `#include <Fichero.hpp>`.
 - raylib está en `vendor/`: las cabeceras (`raylib.h`, `raymath.h`, `rlgl.h`) en `vendor/include/` y la librería estática `libraylib.a` en `vendor/lib/`. Se incluye con `extern "C" { #include <raylib.h> }`, como indica la Práctica 0.
 - La plantilla gestiona las pantallas con una máquina de estados (`StateMachine`) en la que cada pantalla hereda de `GameState`. El escenario no es una pantalla, sino una clase (`Tablero`) que la pantalla de juego (`MainGameState`) contiene y utiliza.
 

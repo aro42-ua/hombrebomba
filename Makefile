@@ -24,13 +24,13 @@ SRC_DIRS := src
 MAIN     := src/main.cpp
 # Carpeta de pruebas: cada .cpp es un ejecutable independiente
 TEST_DIR := tests
-INC_DIRS := src vendor/include
+INC_DIRS := src src/entities src/game src/ai src/board src/core vendor/include
 LIB_DIRS := vendor/lib
 BUILD    := build
 BIN_DIR  := bin
 
 # --- Herramientas y opciones (nombres estandar, se pueden sobrescribir) -----
-CXX      := g++
+CXX      = g++
 CXXFLAGS := -std=c++17 -Wall
 CPPFLAGS := $(addprefix -I,$(INC_DIRS))
 LDFLAGS  := $(addprefix -L,$(LIB_DIRS))

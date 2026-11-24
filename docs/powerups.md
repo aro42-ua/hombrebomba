@@ -83,7 +83,7 @@ Las constantes nuevas están en `Constantes.hpp`, en la sección "Power-ups".
 Se compila con:
 
 ```bash
-g++ -o bin/test_powerups tests/test_powerups.cpp src/PowerUp.cpp src/Jugador.cpp src/Bomba.cpp src/Tablero.cpp -I src/ -I vendor/include/ -L vendor/lib -lraylib -lGL -lm -lpthread -lrt -lX11
+g++ -o bin/test_powerups tests/test_powerups.cpp src/entities/PowerUp.cpp src/entities/Jugador.cpp src/entities/Bomba.cpp src/board/Tablero.cpp -I src/entities/ -I src/board/ -I src/game/ -I vendor/include/ -L vendor/lib -lraylib -lGL -lm -lpthread -lrt -lX11
 ./bin/test_powerups
 ```
 
