@@ -2,6 +2,7 @@
 #include <MainGameState.hpp>
 #include <StateMachine.hpp>
 #include <Constantes.hpp>
+#include <Niveles.hpp>
 #include <memory>
 
 extern "C" {
@@ -43,6 +44,11 @@ void MenuState::handleInput()
         return;
     }
 
+    if (mostrandoNiveles) {
+        handleInputNiveles();
+        return;
+    }
+
     if (IsKeyPressed(KEY_UP)) {
         opcionSeleccionada =
             (opcionSeleccionada + CANTIDAD_OPCIONES - 1) % CANTIDAD_OPCIONES;
@@ -56,6 +62,10 @@ void MenuState::handleInput()
     }
 
     switch (opcionSeleccionada) {
+        case 0:
+            mostrandoNiveles = true;
+            nivelSeleccionado = 0;
+            break;
         case 1:
             state_machine->add_state(
                 std::make_unique<MainGameState>(semilla),
@@ -69,9 +79,70 @@ void MenuState::handleInput()
             state_machine->stop();
             break;
         default:
-            // El modo de un jugador aun no esta implementado.
             break;
     }
+}
+
+void MenuState::handleInputNiveles()
+{
+    // ESC cierra la ventana (tecla de salida por defecto de raylib), así que
+    // para volver se usa RETROCESO.
+    if (IsKeyPressed(KEY_BACKSPACE)) {
+        mostrandoNiveles = false;
+        return;
+    }
+
+    if (IsKeyPressed(KEY_UP)) {
+        nivelSeleccionado = (nivelSeleccionado + NUM_NIVELES - 1) % NUM_NIVELES;
+    }
+    if (IsKeyPressed(KEY_DOWN)) {
+        nivelSeleccionado = (nivelSeleccionado + 1) % NUM_NIVELES;
+    }
+
+    if (IsKeyPressed(KEY_ENTER)) {
+        state_machine->add_state(
+            std::make_unique<MainGameState>(
+                PartidaUnJugador{ nivelSeleccionado + 1, VIDAS_INICIALES },
+                semilla
+            ),
+            true
+        );
+    }
+}
+
+void MenuState::renderNiveles() const
+{
+    dibujarCentrado("1 JUGADOR", 95, TAMANO_TITULO, YELLOW);
+    dibujarCentrado("Elige el nivel", 165, 20, LIGHTGRAY);
+
+    const int inicioY = 225;
+    const int separacion = 52;
+
+    for (int i = 0; i < NUM_NIVELES; ++i) {
+        const int y = inicioY + i * separacion;
+        if (i == nivelSeleccionado) {
+            DrawRectangle(
+                ANCHO_VENTANA / 2 - 205,
+                y - 7,
+                410,
+                42,
+                { 52, 75, 58, 255 }
+            );
+        }
+        dibujarCentrado(
+            TextFormat("Nivel %d: %s", i + 1, getNivel(i + 1).nombre),
+            y,
+            TAMANO_OPCION,
+            i == nivelSeleccionado ? YELLOW : RAYWHITE
+        );
+    }
+
+    dibujarCentrado(
+        TextFormat("Empiezas con %d vidas. Mata a todos los enemigos.", VIDAS_INICIALES),
+        inicioY + NUM_NIVELES * separacion + 10, 18, LIGHTGRAY
+    );
+    dibujarCentrado("Flechas y ENTER para jugar, RETROCESO para volver",
+                    ALTO_VENTANA - 40, 18, GRAY);
 }
 
 void MenuState::update(float deltaTime)
@@ -94,11 +165,17 @@ void MenuState::render()
         return;
     }
 
+    if (mostrandoNiveles) {
+        renderNiveles();
+        EndDrawing();
+        return;
+    }
+
     dibujarCentrado("BOMBERMAN", 125, TAMANO_TITULO, YELLOW);
     dibujarCentrado("Selecciona un modo de juego", 205, 20, LIGHTGRAY);
 
     const char* opciones[CANTIDAD_OPCIONES] = {
-        "1 jugador (sin hacer)",
+        "1 jugador",
         "2 jugadores",
         "Creditos",
         "Salir"

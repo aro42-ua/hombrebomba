@@ -52,6 +52,11 @@ public:
     // bloques aleatorios. Se llama al empezar cada partida (y al reiniciar).
     // Con la misma semilla genera exactamente el mismo tablero.
     void generar(unsigned int semilla);
+
+    // Rellena el tablero con un mapa dibujado a mano (modo un jugador, ver
+    // Niveles.hpp): '#' muro, 'B' bloque y cualquier otro carácter vacío.
+    // mapa tiene FILAS cadenas de al menos COLUMNAS caracteres.
+    void cargar(const char* const mapa[FILAS]);
     unsigned int getSemilla() const;
 
     // --- Eventos ------------------------------------------------------------
