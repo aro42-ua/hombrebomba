@@ -4,6 +4,7 @@
 #include <StateMachine.hpp>
 #include <memory>
 #include <ResultadoPartida.hpp>
+#include <MenuState.hpp>
 #include <cstdlib>
 #include <random>
 
@@ -42,6 +43,14 @@ MainGameState::MainGameState(unsigned int semilla)
 {
 }
 
+MainGameState::MainGameState(PartidaUnJugador partida, unsigned int semilla)
+    : MainGameState(semilla)
+{
+    unJugador = true;
+    nivel = (partida.nivel >= 1 && partida.nivel <= NUM_NIVELES) ? partida.nivel : 1;
+    vidas = partida.vidas;
+}
+
 void MainGameState::init()
 {
     reiniciarPartida();
@@ -49,14 +58,30 @@ void MainGameState::init()
 
 void MainGameState::reiniciarPartida()
 {
-    // Se genera un tablero limpio al comenzar una partida.
-    tablero.generar(semilla);
-    powerUps.repartir(tablero, semilla);
-    crearEnemigos();
+    if (unJugador) {
+        // El nivel siempre es el mismo: mapa, power-ups y enemigos fijos.
+        const Nivel& datosNivel = getNivel(nivel);
+        tablero.cargar(datosNivel.mapa);
+        powerUps.repartir(tablero, datosNivel.semilla, datosNivel.cantidadPowerUps);
+        crearEnemigosNivel(datosNivel);
 
-    // Posiciones iniciales de los dos jugadores.
-    jugador1.init(Tablero::centroDeCelda(1, 1));
-    jugador2.init(Tablero::centroDeCelda(COLUMNAS - 2, 1));
+        Celda inicio = inicioJugador(datosNivel);
+        jugador1.init(Tablero::centroDeCelda(inicio.col, inicio.fila));
+
+        // El jugador 2 no participa: muerto desde el principio, no se mueve,
+        // no pone bombas, los enemigos no lo persiguen y no se dibuja.
+        jugador2.init(Tablero::centroDeCelda(COLUMNAS - 2, 1));
+        jugador2.eliminar();
+    } else {
+        // Se genera un tablero limpio al comenzar una partida.
+        tablero.generar(semilla);
+        powerUps.repartir(tablero, semilla);
+        crearEnemigos();
+
+        // Posiciones iniciales de los dos jugadores.
+        jugador1.init(Tablero::centroDeCelda(1, 1));
+        jugador2.init(Tablero::centroDeCelda(COLUMNAS - 2, 1));
+    }
 
     bombasJugador1.clear();
     bombasJugador2.clear();
@@ -175,6 +200,15 @@ void MainGameState::crearEnemigos()
     }
 }
 
+void MainGameState::crearEnemigosNivel(const Nivel& datosNivel)
+{
+    enemigos.clear();
+    unsigned int semillaEnemigo = datosNivel.semilla;
+    for (const EnemigoNivel& e : enemigosDelNivel(datosNivel)) {
+        enemigos.emplace_back(e.tipo, e.celda, ++semillaEnemigo);
+    }
+}
+
 void MainGameState::actualizarEnemigos(float deltaTime, const std::vector<Celda>& llamas)
 {
     std::vector<BombaVista> bombas;
@@ -234,9 +268,12 @@ void MainGameState::handleInput()
         depuracion = !depuracion;
     }
 
-    // Reiniciar el tablero utilizando una nueva semilla.
+    // Reiniciar el tablero utilizando una nueva semilla. En el modo un
+    // jugador se repite el mismo nivel (sin gastar vida).
     if (IsKeyPressed(KEY_R)) {
-        ++semilla;
+        if (!unJugador) {
+            ++semilla;
+        }
         reiniciarPartida();
     }
 
@@ -373,28 +410,10 @@ void MainGameState::update(float deltaTime)
     comprobarExplosion(bombasJugador2);
 
     if (!partidaTerminada) {
-        ResultadoPartida resultado = calcularResultadoPartida(
-            jugador1.estaVivo(),
-            jugador2.estaVivo()
-        );
-
-        if (resultado != ResultadoPartida::EnCurso) {
-            if (resultado == ResultadoPartida::Jugador1) {
-                ganador = 1;
-            }
-            else if (resultado == ResultadoPartida::Jugador2) {
-                ganador = 2;
-            }
-            else {
-                ganador = 0;
-            }
-
-            partidaTerminada = true;
-
-            state_machine->add_state(
-                std::make_unique<GameOverState>(ganador, semilla),
-                true
-            );
+        if (unJugador) {
+            comprobarFinUnJugador();
+        } else {
+            comprobarFinDosJugadores();
         }
     }
 
@@ -410,16 +429,71 @@ void MainGameState::update(float deltaTime)
     cajaChoca = tablero.colisiona(cajaPrueba);
 }
 
-void MainGameState::render()
+void MainGameState::comprobarFinDosJugadores()
 {
-    BeginDrawing();
+    ResultadoPartida resultado = calcularResultadoPartida(
+        jugador1.estaVivo(),
+        jugador2.estaVivo()
+    );
 
-    ClearBackground({ 24, 33, 27, 255 });
+    if (resultado != ResultadoPartida::EnCurso) {
+        if (resultado == ResultadoPartida::Jugador1) {
+            ganador = 1;
+        }
+        else if (resultado == ResultadoPartida::Jugador2) {
+            ganador = 2;
+        }
+        else {
+            ganador = 0;
+        }
 
-    // ---------------------------------------------------------------------
-    // HUD
-    // ---------------------------------------------------------------------
+        partidaTerminada = true;
 
+        state_machine->add_state(
+            std::make_unique<GameOverState>(ganador, semilla),
+            true
+        );
+    }
+}
+
+void MainGameState::comprobarFinUnJugador()
+{
+    // Morir tiene prioridad: si la misma explosión mata al último enemigo
+    // y al jugador, el nivel no cuenta como superado.
+    if (!jugador1.estaVivo()) {
+        partidaTerminada = true;
+
+        if (vidas > 1) {
+            // Repite el nivel con una vida menos.
+            state_machine->add_state(
+                std::make_unique<MainGameState>(PartidaUnJugador{ nivel, vidas - 1 }, semilla),
+                true
+            );
+        } else {
+            // Sin vidas: Game Over. (Pantalla propia en el paso 4.)
+            state_machine->add_state(std::make_unique<MenuState>(semilla), true);
+        }
+        return;
+    }
+
+    if (enemigos.empty()) {
+        partidaTerminada = true;
+
+        if (nivel < NUM_NIVELES) {
+            // Siguiente nivel, conservando las vidas.
+            state_machine->add_state(
+                std::make_unique<MainGameState>(PartidaUnJugador{ nivel + 1, vidas }, semilla),
+                true
+            );
+        } else {
+            // Juego completado. (Pantalla de victoria en el paso 4.)
+            state_machine->add_state(std::make_unique<MenuState>(semilla), true);
+        }
+    }
+}
+
+void MainGameState::dibujarHudDosJugadores() const
+{
     const char* estadoJugador1 =
         jugador1.estaVivo() ? "VIVO" : "ELIMINADO";
 
@@ -472,6 +546,52 @@ void MainGameState::render()
         20,
         RAYWHITE
     );
+}
+
+void MainGameState::dibujarHudUnJugador() const
+{
+    DrawText(
+        TextFormat("Vidas: %d", vidas),
+        20, 6, 20,
+        jugador1.estaVivo() ? BLUE : GRAY
+    );
+
+    DrawText(
+        TextFormat("B%d F%d V%d", jugador1.getMaxBombas(), jugador1.getAlcance(),
+                   (int)jugador1.getVelocidad()),
+        20, 30, 10, LIGHTGRAY
+    );
+
+    const char* textoNivel = TextFormat("Nivel %d: %s", nivel, getNivel(nivel).nombre);
+    DrawText(
+        textoNivel,
+        ANCHO_VENTANA / 2 - MeasureText(textoNivel, 20) / 2,
+        14, 20, YELLOW
+    );
+
+    const char* textoEnemigos = TextFormat("Enemigos: %d", (int)enemigos.size());
+    DrawText(
+        textoEnemigos,
+        ANCHO_VENTANA - MeasureText(textoEnemigos, 20) - 20,
+        14, 20, RAYWHITE
+    );
+}
+
+void MainGameState::render()
+{
+    BeginDrawing();
+
+    ClearBackground({ 24, 33, 27, 255 });
+
+    // ---------------------------------------------------------------------
+    // HUD
+    // ---------------------------------------------------------------------
+
+    if (unJugador) {
+        dibujarHudUnJugador();
+    } else {
+        dibujarHudDosJugadores();
+    }
 
     // Línea que separa el HUD del tablero.
     DrawLine(
@@ -494,7 +614,9 @@ void MainGameState::render()
     }
 
     jugador1.render();
-    jugador2.render();
+    if (!unJugador) {
+        jugador2.render();
+    }
 
     for (const Bomba& bomba : bombasJugador1) {
         bomba.dibujar();
@@ -538,11 +660,13 @@ void MainGameState::render()
             RED
         );
 
-        DrawRectangleLinesEx(
-            jugador2.getCajaColision(),
-            2,
-            RED
-        );
+        if (!unJugador) {
+            DrawRectangleLinesEx(
+                jugador2.getCajaColision(),
+                2,
+                RED
+            );
+        }
     }
 
     EndDrawing();

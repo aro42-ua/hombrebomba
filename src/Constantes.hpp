@@ -60,3 +60,6 @@ constexpr int   RADIO_PERSECUCION      = 8;      // pasos de camino a los que "v
 constexpr int   RADIO_HUIDA            = 10;     // pasos que busca como mucho para ponerse a salvo
 constexpr int   PROB_SEGUIR_RECTO      = 70;     // % de seguir en línea recta al deambular
 constexpr int   DISTANCIA_APARICION    = 8;      // distancia mínima (Manhattan) a los jugadores
+
+// --- Modo un jugador -------------------------------------------------------
+constexpr int   VIDAS_INICIALES        = 3;      // al perderlas todas, Game Over

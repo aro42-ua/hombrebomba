@@ -16,7 +16,14 @@ public:
     void resume() override {};
 
 private:
+    void handleInputNiveles();
+    void renderNiveles() const;
+
     unsigned int semilla;
     int opcionSeleccionada = 0;
     bool mostrandoCreditos = false;
+
+    // Lista de niveles del modo un jugador (de 0 a NUM_NIVELES - 1).
+    bool mostrandoNiveles = false;
+    int nivelSeleccionado = 0;
 };
