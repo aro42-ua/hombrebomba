@@ -8,6 +8,7 @@
 #include <Enemigo.hpp>
 #include <IAEnemigo.hpp>
 #include <Niveles.hpp>
+#include <PantallaUnJugadorState.hpp>
 #include <vector>
 
 // Datos de una partida del modo un jugador: en qué nivel está y cuántas
@@ -69,6 +70,9 @@ class MainGameState : public GameState
         // Final de partida de cada modo. Solo se llaman con la partida en curso.
         void comprobarFinDosJugadores();
         void comprobarFinUnJugador();
+
+        // Modo un jugador: pantalla de entre niveles (ver PantallaUnJugadorState).
+        void abrirPantalla(TipoPantallaUnJugador tipo, int vidasRestantes);
 
         void dibujarHudDosJugadores() const;
         void dibujarHudUnJugador() const;

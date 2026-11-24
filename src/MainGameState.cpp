@@ -4,7 +4,7 @@
 #include <StateMachine.hpp>
 #include <memory>
 #include <ResultadoPartida.hpp>
-#include <MenuState.hpp>
+#include <PantallaUnJugadorState.hpp>
 #include <cstdlib>
 #include <random>
 
@@ -462,34 +462,27 @@ void MainGameState::comprobarFinUnJugador()
     // y al jugador, el nivel no cuenta como superado.
     if (!jugador1.estaVivo()) {
         partidaTerminada = true;
-
-        if (vidas > 1) {
-            // Repite el nivel con una vida menos.
-            state_machine->add_state(
-                std::make_unique<MainGameState>(PartidaUnJugador{ nivel, vidas - 1 }, semilla),
-                true
-            );
-        } else {
-            // Sin vidas: Game Over. (Pantalla propia en el paso 4.)
-            state_machine->add_state(std::make_unique<MenuState>(semilla), true);
-        }
+        const int vidasRestantes = vidas - 1;
+        abrirPantalla(vidasRestantes > 0 ? TipoPantallaUnJugador::VidaPerdida
+                                         : TipoPantallaUnJugador::GameOver,
+                      vidasRestantes);
         return;
     }
 
     if (enemigos.empty()) {
         partidaTerminada = true;
-
-        if (nivel < NUM_NIVELES) {
-            // Siguiente nivel, conservando las vidas.
-            state_machine->add_state(
-                std::make_unique<MainGameState>(PartidaUnJugador{ nivel + 1, vidas }, semilla),
-                true
-            );
-        } else {
-            // Juego completado. (Pantalla de victoria en el paso 4.)
-            state_machine->add_state(std::make_unique<MenuState>(semilla), true);
-        }
+        abrirPantalla(nivel < NUM_NIVELES ? TipoPantallaUnJugador::NivelSuperado
+                                          : TipoPantallaUnJugador::Victoria,
+                      vidas);
     }
+}
+
+void MainGameState::abrirPantalla(TipoPantallaUnJugador tipo, int vidasRestantes)
+{
+    state_machine->add_state(
+        std::make_unique<PantallaUnJugadorState>(tipo, nivel, vidasRestantes, semilla),
+        true
+    );
 }
 
 void MainGameState::dibujarHudDosJugadores() const
