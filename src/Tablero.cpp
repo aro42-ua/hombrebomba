@@ -272,6 +272,23 @@ void Tablero::generar(unsigned int semilla) {
     }
 }
 
+// Los niveles no dependen de ninguna semilla: siempre salen iguales.
+void Tablero::cargar(const char* const mapa[FILAS]) {
+    semilla = 0;
+    celdas.assign(COLUMNAS * FILAS, TipoCelda::Vacio);
+
+    for (int fila = 0; fila < FILAS; fila++) {
+        for (int col = 0; col < COLUMNAS; col++) {
+            char c = mapa[fila][col];
+            if (c == '#') {
+                setCelda(col, fila, TipoCelda::Muro);
+            } else if (c == 'B') {
+                setCelda(col, fila, TipoCelda::Bloque);
+            }
+        }
+    }
+}
+
 // ===========================================================================
 // Colisiones
 // ===========================================================================
